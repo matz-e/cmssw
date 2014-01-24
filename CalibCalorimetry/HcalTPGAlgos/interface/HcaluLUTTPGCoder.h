@@ -58,7 +58,8 @@ private:
   typedef std::vector<LutElement> Lut;
 
   // constants
-  static const size_t nluts = 46007, INPUT_LUT_SIZE = 128;
+  // static const size_t nluts = 46007, INPUT_LUT_SIZE = 128;
+  static const size_t nluts = 94815, INPUT_LUT_SIZE = 256;
   static const float lsb_;
   
   // member variables
