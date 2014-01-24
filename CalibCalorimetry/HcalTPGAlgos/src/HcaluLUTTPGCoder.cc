@@ -42,7 +42,7 @@ int HcaluLUTTPGCoder::getLUTId(HcalSubdetector id, int ieta, int iphi, int depth
    int detid = 0;
    if (id == HcalEndcap) detid = 1;
    else if (id == HcalForward) detid = 2;
-   return iphi + 72 * ((ieta + 41) + 83 * (depth + 3 * detid)) - 7777;
+   return iphi + 72 * ((ieta + 41) + 83 * (depth + 7 * detid)) - 7777;
 }
 
 int HcaluLUTTPGCoder::getLUTId(uint32_t rawid) const {
@@ -203,7 +203,7 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
       HcalSubdetector subdet = subdets[isub];
       for (int ieta = -41; ieta <= 41; ++ieta){
          for (int iphi = 1; iphi <= 72; ++iphi){
-            for (int depth = 1; depth <= 3; ++depth){
+            for (int depth = 1; depth <= 7; ++depth){
                HcalDetId cell(subdet, ieta, iphi, depth);
 	       if (!metadata->topo()->valid(cell)) continue;
 
@@ -251,7 +251,9 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
 
                   int granularity = meta->getLutGranularity();
 
-                  for (int adc = 0; adc <= 0x7F; ++adc) {
+                  // Iterate up to 0x7F = 127 for QIE8 (returns 0
+                  // thereafter, and 0xFF = 255 for QIE10.
+                  for (int adc = 0; adc <= 0xFF; ++adc) {
                      frame.setSample(0,HcalQIESample(adc));
                      coder.adc2fC(frame,samples);
                      float adc2fC = samples[0];
@@ -272,7 +274,9 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
                   // Lumi offset of 1 adc (in fC) for the four rings used to measure lumi
                   float offset = (abs(ieta) >= 33 && abs(ieta) <= 36) ? one_adc2fC : 0; 
                   
-                  for (int adc = 0; adc <= 0x7F; ++adc) {
+                  // Iterate up to 0x7F = 127 for QIE8 (returns 0
+                  // thereafter, and 0xFF = 255 for QIE10.
+                  for (int adc = 0; adc <= 0xFF; ++adc) {
                      frame.setSample(0,HcalQIESample(adc));
                      coder.adc2fC(frame,samples);
                      float adc2fC = samples[0];
