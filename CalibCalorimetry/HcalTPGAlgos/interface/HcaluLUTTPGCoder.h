@@ -31,12 +31,14 @@ class HcalDbService;
 class HcaluLUTTPGCoder : public HcalTPGCoder {
 public:
 
-  HcaluLUTTPGCoder();
+  HcaluLUTTPGCoder(bool legacy = true);
   virtual ~HcaluLUTTPGCoder();
   virtual void adc2Linear(const HBHEDataFrame& df, IntegerCaloSamples& ics) const;
   virtual void adc2Linear(const HFDataFrame& df, IntegerCaloSamples& ics) const;
+  virtual void adc2Linear(const HcalUpgradeDataFrame& df, IntegerCaloSamples& ics) const;
   virtual void compress(const IntegerCaloSamples& ics, const std::vector<bool>& featureBits, HcalTriggerPrimitiveDigi& tp) const;
   virtual unsigned short adc2Linear(HcalQIESample sample,HcalDetId id) const;
+  virtual unsigned short adc2Linear(HcalUpgradeQIESample sample,HcalDetId id) const;
   virtual float getLUTPedestal(HcalDetId id) const;
   virtual float getLUTGain(HcalDetId id) const;
 
@@ -58,13 +60,15 @@ private:
   typedef std::vector<LutElement> Lut;
 
   // constants
-  // static const size_t nluts = 46007, INPUT_LUT_SIZE = 128;
-  static const size_t nluts = 94815, INPUT_LUT_SIZE = 256;
+  static const size_t legacy_nluts = 46007, legacy_INPUT_LUT_SIZE = 128, legacy_max_depth = 3;
+  static const size_t upgrade_nluts = 94815, upgrade_INPUT_LUT_SIZE = 256, upgrade_max_depth = 7;
   static const float lsb_;
   
   // member variables
+  bool LegacyMode_;
   bool LUTGenerationMode_;
   int bitToMask_;
+  size_t nluts, INPUT_LUT_SIZE, max_depth;
   std::vector< Lut > inputLUT_;
   std::vector<float> gain_;
   std::vector<float> ped_;
