@@ -29,6 +29,9 @@ private:
   edm::EDGetTokenT<HBHEDigiCollection> tok_hbhe_;
   edm::EDGetTokenT<HFDigiCollection> tok_hf_;
 
+  edm::EDGetTokenT<HBHEUpgradeDigiCollection> tok_up_hbhe_;
+  edm::EDGetTokenT<HFUpgradeDigiCollection> tok_up_hf_;
+
   /// input tag for FEDRawDataCollection
   edm::InputTag inputTagFEDRaw_;
   edm::EDGetTokenT<FEDRawDataCollection> tok_raw_;
@@ -37,6 +40,7 @@ private:
 
   bool runFrontEndFormatError_;
 
+  bool upgrade_;
 };
 
 #endif

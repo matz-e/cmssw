@@ -50,6 +50,7 @@ class HcalTPGCoderULUT : public edm::ESProducer {
    private:
   void buildCoder(const HcalTopology*);
       // ----------member data ---------------------------
+      bool upgrade_;
       ReturnType coder_;  
       HcaluLUTTPGCoder* theCoder_;
   bool read_FGLut_, read_Ascii_,read_XML_,LUTGenerationMode_;
@@ -70,6 +71,11 @@ class HcalTPGCoderULUT : public edm::ESProducer {
 //
 HcalTPGCoderULUT::HcalTPGCoderULUT(const edm::ParameterSet& iConfig) 
 {
+   if (iConfig.exists("upgrade")) {
+      upgrade_ = iConfig.getParameter<bool>("upgrade");
+   } else {
+      upgrade_ = false;
+   }
    read_Ascii_ = iConfig.getParameter<bool>("read_Ascii_LUTs");
    read_XML_ = iConfig.getParameter<bool>("read_XML_LUTs");
    read_FGLut_ = iConfig.getParameter<bool>("read_FG_LUTs"); 
@@ -91,7 +97,7 @@ HcalTPGCoderULUT::HcalTPGCoderULUT(const edm::ParameterSet& iConfig)
   
 void HcalTPGCoderULUT::buildCoder(const HcalTopology* topo) {  
    using namespace edm::es;
-   theCoder_ = new HcaluLUTTPGCoder();
+   theCoder_ = new HcaluLUTTPGCoder(!upgrade_);
    if (read_Ascii_ || read_XML_){
      edm::LogInfo("HCAL") << "Using ASCII/XML LUTs" << ifilename_.fullPath() << " for HcalTPGCoderULUT initialization";
      if (read_Ascii_) {

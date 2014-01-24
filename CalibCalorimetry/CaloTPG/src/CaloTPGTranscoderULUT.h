@@ -19,9 +19,11 @@ class HcalTrigTowerGeometry;
 class CaloTPGTranscoderULUT : public CaloTPGTranscoder {
 public:
   CaloTPGTranscoderULUT(const std::string& compressionFile="",
-                        const std::string& decompressionFile="");
+                        const std::string& decompressionFile="",
+                        bool upgrade=false);
   virtual ~CaloTPGTranscoderULUT();
   virtual HcalTriggerPrimitiveSample hcalCompress(const HcalTrigTowerDetId& id, unsigned int sample, bool fineGrain) const;
+  virtual HcalUpgradeTriggerPrimitiveSample hcalUpgradeCompress(const HcalTrigTowerDetId& id, unsigned int sample, bool fineGrain) const;
   virtual EcalTriggerPrimitiveSample ecalCompress(const EcalTrigTowerDetId& id, unsigned int sample, bool fineGrain) const;
 
   virtual void rctEGammaUncompress(const HcalTrigTowerDetId& hid, const HcalTriggerPrimitiveSample& hc,
@@ -46,7 +48,6 @@ public:
   // Constant
   // TODO prefix k
   static const int NOUTLUTS = 4176;
-  static const unsigned int OUTPUT_LUT_SIZE = 1024;
   static const int TPGMAX = 256;
   static const bool newHFphi = true;
 
@@ -68,7 +69,12 @@ public:
   std::vector<int> ZS;
   std::vector<int> LUTfactor;
 
-  LUT *outputLUT_[NOUTLUTS];
-  std::vector<RCTdecompression> hcaluncomp_;
+  bool upgrade_;
+  const unsigned int OUTPUT_LUT_SIZE;
+  // static const unsigned int OUTPUT_LUT_SIZE = 1024;
+  /* static const unsigned int OUTPUT_LUT_SIZE = 0x40000; */
+
+  mutable LUT *outputLUT_[NOUTLUTS];
+  mutable std::vector<RCTdecompression> hcaluncomp_;
 };
 #endif
