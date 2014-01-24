@@ -139,9 +139,9 @@ void HcaluLUTTPGCoder::update(const char* filename, const HcalTopology& theTopo,
       for (int ieta = ietaL[i]; ieta <= ietaU[i]; ++ieta){
          for (int iphi = iphiL[i]; iphi <= iphiU[i]; ++iphi){
             for (int depth = depL[i]; depth <= depU[i]; ++depth){
-	      
+
                HcalDetId id(subdet[i], ieta, iphi, depth);
- 	       if (!theTopo.valid(id)) continue;
+               if (!theTopo.valid(id)) continue;
 
                int lutId = getLUTId(id);
                for (size_t adc = 0; adc < INPUT_LUT_SIZE; ++adc){
@@ -205,10 +205,10 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
          for (int iphi = 1; iphi <= 72; ++iphi){
             for (int depth = 1; depth <= 7; ++depth){
                HcalDetId cell(subdet, ieta, iphi, depth);
-	       if (!metadata->topo()->valid(cell)) continue;
+               if (!metadata->topo()->valid(cell)) continue;
 
                const HcalQIECoder* channelCoder = conditions.getHcalCoder (cell);
-	       const HcalQIEShape* shape = conditions.getHcalShape(cell);
+               const HcalQIEShape* shape = conditions.getHcalShape(cell);
                HcalCoderDb coder (*channelCoder, *shape);
                const HcalLutMetadatum *meta = metadata->getValues(cell);
 
