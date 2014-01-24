@@ -253,7 +253,7 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
 
                   // Iterate up to 0x7F = 127 for QIE8 (returns 0
                   // thereafter, and 0xFF = 255 for QIE10.
-                  for (int adc = 0; adc <= 0xFF; ++adc) {
+                  for (unsigned int adc = 0; adc < INPUT_LUT_SIZE; ++adc) {
                      frame.setSample(0,HcalQIESample(adc));
                      coder.adc2fC(frame,samples);
                      float adc2fC = samples[0];
@@ -276,7 +276,7 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
                   
                   // Iterate up to 0x7F = 127 for QIE8 (returns 0
                   // thereafter, and 0xFF = 255 for QIE10.
-                  for (int adc = 0; adc <= 0xFF; ++adc) {
+                  for (unsigned int adc = 0; adc < INPUT_LUT_SIZE; ++adc) {
                      frame.setSample(0,HcalQIESample(adc));
                      coder.adc2fC(frame,samples);
                      float adc2fC = samples[0];
