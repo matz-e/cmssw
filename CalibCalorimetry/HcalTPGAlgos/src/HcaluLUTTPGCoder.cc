@@ -26,9 +26,15 @@
 
 const float HcaluLUTTPGCoder::lsb_=1./16;
 
-HcaluLUTTPGCoder::HcaluLUTTPGCoder() : LUTGenerationMode_(true), bitToMask_(0),
-                                       inputLUT_(nluts, Lut(INPUT_LUT_SIZE, 0)),
-                                       gain_(nluts, 0.), ped_ (nluts, 0.){
+HcaluLUTTPGCoder::HcaluLUTTPGCoder(bool legacy) :
+   LegacyMode_(legacy),
+   LUTGenerationMode_(true),
+   bitToMask_(0),
+   nluts(legacy ? legacy_nluts : upgrade_nluts),
+   INPUT_LUT_SIZE(legacy ? legacy_INPUT_LUT_SIZE : upgrade_INPUT_LUT_SIZE),
+   max_depth(legacy ? legacy_max_depth : upgrade_max_depth),
+   inputLUT_(nluts, Lut(INPUT_LUT_SIZE, 0)),
+   gain_(nluts, 0.), ped_ (nluts, 0.){
 }
 
 void HcaluLUTTPGCoder::compress(const IntegerCaloSamples& ics, const std::vector<bool>& featureBits, HcalTriggerPrimitiveDigi& tp) const {
@@ -42,7 +48,7 @@ int HcaluLUTTPGCoder::getLUTId(HcalSubdetector id, int ieta, int iphi, int depth
    int detid = 0;
    if (id == HcalEndcap) detid = 1;
    else if (id == HcalForward) detid = 2;
-   return iphi + 72 * ((ieta + 41) + 83 * (depth + 7 * detid)) - 7777;
+   return iphi + 72 * ((ieta + 41) + 83 * (depth + max_depth * detid)) - 7777;
 }
 
 int HcaluLUTTPGCoder::getLUTId(uint32_t rawid) const {
@@ -203,7 +209,7 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
       HcalSubdetector subdet = subdets[isub];
       for (int ieta = -41; ieta <= 41; ++ieta){
          for (int iphi = 1; iphi <= 72; ++iphi){
-            for (int depth = 1; depth <= 7; ++depth){
+            for (unsigned int depth = 1; depth <= max_depth; ++depth){
                HcalDetId cell(subdet, ieta, iphi, depth);
                if (!metadata->topo()->valid(cell)) continue;
 
@@ -245,21 +251,41 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
 
                // Input LUT for HB/HE/HF
                if (subdet == HcalBarrel || subdet == HcalEndcap){
-                  HBHEDataFrame frame(cell);
-                  frame.setSize(1);
-                  CaloSamples samples(cell, 1);
-
                   int granularity = meta->getLutGranularity();
 
-                  // Iterate up to 0x7F = 127 for QIE8 (returns 0
-                  // thereafter, and 0xFF = 255 for QIE10.
-                  for (unsigned int adc = 0; adc < INPUT_LUT_SIZE; ++adc) {
-                     frame.setSample(0,HcalQIESample(adc));
-                     coder.adc2fC(frame,samples);
-                     float adc2fC = samples[0];
+                  if (channelCoder->qieIndex() == 0) {
+                     // QIE 8
+                     HBHEDataFrame frame(cell);
+                     frame.setSize(1);
+                     CaloSamples samples(cell, 1);
 
-                     if (isMasked) inputLUT_[lutId][adc] = 0;
-                     else inputLUT_[lutId][adc] = (LutElement) std::min(std::max(0, int((adc2fC -ped) * gain * rcalib / nominalgain_ / granularity)), 0x3FF);
+                     for (unsigned int adc = 0; adc < 128; ++adc) {
+                        frame.setSample(0,HcalQIESample(adc));
+                        coder.adc2fC(frame,samples);
+                        float adc2fC = samples[0];
+
+                        if (isMasked) inputLUT_[lutId][adc] = 0;
+                        // FIXME do we need to watch out for that final 0x3FF?
+                        else inputLUT_[lutId][adc] = (LutElement) std::min(std::max(0, int((adc2fC -ped) * gain * rcalib / nominalgain_ / granularity)), 0x3FF);
+                     }
+                     for (unsigned int adc = 128; adc < INPUT_LUT_SIZE; ++adc) {
+                        inputLUT_[lutId][adc] = 0;
+                     }
+                  } else {
+                     // QIE 10
+                     HcalUpgradeDataFrame frame(cell);
+                     frame.setSize(1);
+                     CaloSamples samples(cell, 1);
+
+                     for (unsigned int adc = 0; adc < 256; ++adc) {
+                        frame.setSample(0, adc, 0, true);
+                        coder.adc2fC(frame, samples);
+                        float adc2fC = samples[0];
+
+                        if (isMasked) inputLUT_[lutId][adc] = 0;
+                        // FIXME do we need to watch out for that final 0x3FF?
+                        else inputLUT_[lutId][adc] = (LutElement) std::min(std::max(0, int((adc2fC -ped) * gain * rcalib / nominalgain_ / granularity)), 0x3FF);
+                     }
                   }
                }  // endif HBHE
                else if (subdet == HcalForward){
@@ -274,14 +300,17 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
                   // Lumi offset of 1 adc (in fC) for the four rings used to measure lumi
                   float offset = (abs(ieta) >= 33 && abs(ieta) <= 36) ? one_adc2fC : 0; 
                   
-                  // Iterate up to 0x7F = 127 for QIE8 (returns 0
-                  // thereafter, and 0xFF = 255 for QIE10.
-                  for (unsigned int adc = 0; adc < INPUT_LUT_SIZE; ++adc) {
+                  // QIE 8, still?
+                  for (unsigned int adc = 0; adc < 256; ++adc) {
                      frame.setSample(0,HcalQIESample(adc));
                      coder.adc2fC(frame,samples);
                      float adc2fC = samples[0];
                      if (isMasked) inputLUT_[lutId][adc] = 0;
+                     // FIXME do we need to watch out for that final 0x3FF?
                      else inputLUT_[lutId][adc] = std::min(std::max(0,int((adc2fC - ped + offset) * gain * rcalib / lsb_ / cosh_ieta[abs(ieta)] )), 0x3FF);
+                  }
+                  for (unsigned int adc = 128; adc < INPUT_LUT_SIZE; ++adc) {
+                     inputLUT_[lutId][adc] = 0;
                   }
                } // endif HF
             } // for depth
@@ -294,6 +323,7 @@ void HcaluLUTTPGCoder::adc2Linear(const HBHEDataFrame& df, IntegerCaloSamples& i
    int lutId = getLUTId(df.id());
    const Lut& lut = inputLUT_.at(lutId);
    for (int i=0; i<df.size(); i++){
+      // FIXME do we need to watch out for that final 0x3FF?
       ics[i] = (lut.at(df[i].adc()) & 0x3FF);
    }
 }
@@ -302,12 +332,29 @@ void HcaluLUTTPGCoder::adc2Linear(const HFDataFrame& df, IntegerCaloSamples& ics
    int lutId = getLUTId(df.id());
    const Lut& lut = inputLUT_.at(lutId);
    for (int i=0; i<df.size(); i++){
+      // FIXME do we need to watch out for that final 0x3FF?
+      ics[i] = (lut.at(df[i].adc()) & 0x3FF);
+   }
+}
+
+void HcaluLUTTPGCoder::adc2Linear(const HcalUpgradeDataFrame& df, IntegerCaloSamples& ics) const {
+   int lutId = getLUTId(df.id());
+   const Lut& lut = inputLUT_.at(lutId);
+   for (int i=0; i<df.size(); i++){
+      // FIXME do we need to watch out for that final 0x3FF?
       ics[i] = (lut.at(df[i].adc()) & 0x3FF);
    }
 }
 
 unsigned short HcaluLUTTPGCoder::adc2Linear(HcalQIESample sample, HcalDetId id) const {
    int lutId = getLUTId(id);
+   // FIXME do we need to watch out for that final 0x3FF?
+   return ((inputLUT_.at(lutId)).at(sample.adc()) & 0x3FF);
+}
+
+unsigned short HcaluLUTTPGCoder::adc2Linear(HcalUpgradeQIESample sample, HcalDetId id) const {
+   int lutId = getLUTId(id);
+   // FIXME do we need to watch out for that final 0x3FF?
    return ((inputLUT_.at(lutId)).at(sample.adc()) & 0x3FF);
 }
 
@@ -335,5 +382,6 @@ void HcaluLUTTPGCoder::lookupMSB(const HBHEDataFrame& df, std::vector<bool>& msb
 bool HcaluLUTTPGCoder::getMSB(const HcalDetId& id, int adc) const{
    int lutId = getLUTId(id);
    const Lut& lut = inputLUT_.at(lutId);
+   // FIXME do we need to watch out for that final 0x400?
    return (lut.at(adc) & 0x400);
 }
