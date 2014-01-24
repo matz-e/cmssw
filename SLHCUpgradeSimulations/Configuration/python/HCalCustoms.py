@@ -130,7 +130,16 @@ def customise_Digi(process):
         process.simHcalDigis.HOlevel=cms.int32(16)
         process.simHcalDigis.HFlevel=cms.int32(16)
 
-    process.digitisation_step.remove(process.simHcalTriggerPrimitiveDigis)
+    if hasattr(process,'HcalTPGCoderULUT'):
+        process.HcalTPGCoderULUT.upgrade = cms.bool(True)
+        process.CaloTPGTranscoder.upgrade = cms.bool(True)
+
+    if hasattr(process, 'simHcalTriggerPrimitiveDigis'):
+        process.simHcalTriggerPrimitiveDigis.upgrade = cms.bool(True)
+        process.simHcalTriggerPrimitiveDigis.inputLabel = cms.VInputTag(
+                cms.InputTag("mix", "HBHEUpgradeDigiCollection", "DIGI2RAW"),
+                cms.InputTag("mix", "HFUpgradeDigiCollection", "DIGI2RAW"))
+    # process.digitisation_step.remove(process.simHcalTriggerPrimitiveDigis)
     process.digitisation_step.remove(process.simHcalTTPDigis)
 
     return process

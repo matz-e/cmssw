@@ -18,6 +18,7 @@
 
 
 // system include files
+#include <iostream>
 #include <memory>
 
 // user include files
@@ -62,6 +63,8 @@ private:
   std::vector<int> LUTfactor;
   double nominal_gain;
   double RCTLSB;
+
+  bool upgrade_;
 };
 
 //
@@ -77,7 +80,8 @@ private:
 //
 CaloTPGTranscoderULUTs::CaloTPGTranscoderULUTs(const edm::ParameterSet& iConfig) :
   hfilename1_(iConfig.getParameter<edm::FileInPath>("hcalLUT1")),
-  hfilename2_(iConfig.getParameter<edm::FileInPath>("hcalLUT2"))
+  hfilename2_(iConfig.getParameter<edm::FileInPath>("hcalLUT2")),
+  upgrade_(iConfig.getParameter<bool>("upgrade"))
 {
    //the following line is needed to tell the framework what
    // data is being produced
@@ -139,7 +143,8 @@ CaloTPGTranscoderULUTs::produce(const CaloTPGRecord& iRecord)
      //return pTCoder;
        file1 = hfilename1_.fullPath();
    } else {
-	 edm::LogInfo("Level1") << "Using analytical compression and RCT decompression for CaloTPGTranscoderULUTs HCAL initialization";
+     std::cout << "Using analytical compression and RCT decompression for CaloTPGTranscoderULUTs HCAL initialization" << std::endl;
+     // edm::LogInfo("Level1") << "Using analytical compression and RCT decompression for CaloTPGTranscoderULUTs HCAL initialization";
 	 //std::auto_ptr<CaloTPGTranscoder> pTCoder(new CaloTPGTranscoderULUT());
 	 //return pTCoder;
    }
@@ -156,7 +161,7 @@ CaloTPGTranscoderULUTs::produce(const CaloTPGRecord& iRecord)
    HcalLutMetadata fullLut{ *lutMetadata };
    fullLut.setTopo(htopo.product());
 
-   std::auto_ptr<CaloTPGTranscoderULUT> pTCoder(new CaloTPGTranscoderULUT(file1, file2));
+   std::auto_ptr<CaloTPGTranscoderULUT> pTCoder(new CaloTPGTranscoderULUT(file1, file2, upgrade_));
    pTCoder->setup(fullLut, *theTrigTowerGeometry);
    return std::auto_ptr<CaloTPGTranscoder>( pTCoder );
 }

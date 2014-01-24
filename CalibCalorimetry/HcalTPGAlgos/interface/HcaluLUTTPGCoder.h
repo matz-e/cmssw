@@ -29,12 +29,14 @@ class HcalDbService;
 class HcaluLUTTPGCoder : public HcalTPGCoder {
 public:
 
-  HcaluLUTTPGCoder();
+  HcaluLUTTPGCoder(bool legacy = true);
   virtual ~HcaluLUTTPGCoder();
   virtual void adc2Linear(const HBHEDataFrame& df, IntegerCaloSamples& ics) const;
   virtual void adc2Linear(const HFDataFrame& df, IntegerCaloSamples& ics) const;
+  virtual void adc2Linear(const HcalUpgradeDataFrame& df, IntegerCaloSamples& ics) const;
   virtual void compress(const IntegerCaloSamples& ics, const std::vector<bool>& featureBits, HcalTriggerPrimitiveDigi& tp) const;
   virtual unsigned short adc2Linear(HcalQIESample sample,HcalDetId id) const;
+  virtual unsigned short adc2Linear(HcalUpgradeQIESample sample,HcalDetId id) const;
   virtual float getLUTPedestal(HcalDetId id) const;
   virtual float getLUTGain(HcalDetId id) const;
 
@@ -45,6 +47,7 @@ public:
   void setMaskBit(int bit){ bitToMask_ = bit; };
   std::vector<unsigned short> getLinearizationLUTWithMSB(const HcalDetId& id) const;
   void lookupMSB(const HBHEDataFrame& df, std::vector<bool>& msb) const;
+  void lookupMSB(const HcalUpgradeDataFrame& df, std::vector<bool>& msb) const;
   bool getMSB(const HcalDetId& id, int adc) const;
   int getLUTId(HcalSubdetector id, int ieta, int iphi, int depth) const;
   int getLUTId(uint32_t rawid) const;
@@ -56,12 +59,18 @@ private:
   typedef std::vector<LutElement> Lut;
 
   // constants
-  static const size_t nluts = 46007, INPUT_LUT_SIZE = 128;
+  static const size_t legacy_nluts = 46007, legacy_INPUT_LUT_SIZE = 128, legacy_max_depth = 3;
+  static const size_t upgrade_nluts = 94815, upgrade_INPUT_LUT_SIZE = 256, upgrade_max_depth = 7;
   static const float lsb_;
   
   // member variables
+  bool LegacyMode_;
   bool LUTGenerationMode_;
   int bitToMask_;
+  size_t max_depth;
+  size_t nluts;
+  size_t INPUT_LUT_SIZE;
+  int OUTPUT_MASK;
   std::vector< Lut > inputLUT_;
   std::vector<float> gain_;
   std::vector<float> ped_;

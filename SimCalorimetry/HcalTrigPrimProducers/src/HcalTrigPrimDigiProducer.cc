@@ -32,12 +32,14 @@ HcalTrigPrimDigiProducer::HcalTrigPrimDigiProducer(const edm::ParameterSet& ps)
 	  ps.getParameter<int>("numberOfSamples"),
 	  ps.getParameter<int>("numberOfPresamples"),
       ps.getParameter<uint32_t>("MinSignalThreshold"),
-      ps.getParameter<uint32_t>("PMTNoiseThreshold")
+      ps.getParameter<uint32_t>("PMTNoiseThreshold"),
+      ps.getParameter<bool>("upgrade")
    ),
   inputLabel_(ps.getParameter<std::vector<edm::InputTag> >("inputLabel")),
   inputTagFEDRaw_(ps.getParameter<edm::InputTag> ("InputTagFEDRaw")),
   runZS_(ps.getParameter<bool>("RunZS")),
-  runFrontEndFormatError_(ps.getParameter<bool>("FrontEndFormatError"))
+  runFrontEndFormatError_(ps.getParameter<bool>("FrontEndFormatError")),
+  upgrade_(ps.getParameter<bool>("upgrade"))
 {
   // register for data access
   if (runFrontEndFormatError_) {
@@ -46,7 +48,11 @@ HcalTrigPrimDigiProducer::HcalTrigPrimDigiProducer(const edm::ParameterSet& ps)
   tok_hbhe_ = consumes<HBHEDigiCollection>(inputLabel_[0]);
   tok_hf_ = consumes<HFDigiCollection>(inputLabel_[1]);
 
+  tok_up_hbhe_ = consumes<HBHEUpgradeDigiCollection>(inputLabel_[0]);
+  tok_up_hf_ = consumes<HFUpgradeDigiCollection>(inputLabel_[1]);
+
    produces<HcalTrigPrimDigiCollection>();
+   produces<HcalUpgradeTrigPrimDigiCollection>();
    theAlgo_.setPeakFinderAlgorithm(ps.getParameter<int>("PeakFinderAlgorithm"));
 }
 
@@ -69,19 +75,26 @@ void HcalTrigPrimDigiProducer::produce(edm::Event& iEvent, const edm::EventSetup
   
   // Step B: Create empty output
   std::auto_ptr<HcalTrigPrimDigiCollection> result(new HcalTrigPrimDigiCollection());
+  std::auto_ptr<HcalUpgradeTrigPrimDigiCollection> up_result(new HcalUpgradeTrigPrimDigiCollection());
 
   edm::Handle<HBHEDigiCollection> hbheDigis;
-  edm::Handle<HFDigiCollection>   hfDigis;
+  edm::Handle<HFDigiCollection> hfDigis;
 
   iEvent.getByToken(tok_hbhe_,hbheDigis);
   iEvent.getByToken(tok_hf_,hfDigis);
 
+  edm::Handle<HBHEUpgradeDigiCollection> hbheUpgradeDigis;
+  edm::Handle<HFUpgradeDigiCollection>   hfUpgradeDigis;
+
+  iEvent.getByToken(tok_up_hbhe_,hbheUpgradeDigis);
+  iEvent.getByToken(tok_up_hf_,hfUpgradeDigis);
+
   // protect here against missing input collections
   // there is no protection in HcalTriggerPrimitiveAlgo
 
-  if (!hbheDigis.isValid()) {
+  if (!hbheDigis.isValid() && !(upgrade_ && hbheUpgradeDigis.isValid())) {
       edm::LogInfo("HcalTrigPrimDigiProducer")
-              << "\nWarning: HBHEDigiCollection with input tag "
+              << "\nWarning: HBHE(Upgrade)DigiCollection with input tag "
               << inputLabel_[0]
               << "\nrequested in configuration, but not found in the event."
               << "\nQuit returning empty product." << std::endl;
@@ -92,9 +105,9 @@ void HcalTrigPrimDigiProducer::produce(edm::Event& iEvent, const edm::EventSetup
       return;
   }
 
-  if (!hfDigis.isValid()) {
+  if (!hfDigis.isValid() && !(upgrade_ && hfUpgradeDigis.isValid())) {
       edm::LogInfo("HcalTrigPrimDigiProducer")
-              << "\nWarning: HFDigiCollection with input tag "
+              << "\nWarning: HF(Upgrade)DigiCollection with input tag "
               << inputLabel_[1]
               << "\nrequested in configuration, but not found in the event."
               << "\nQuit returning empty product." << std::endl;
@@ -105,10 +118,14 @@ void HcalTrigPrimDigiProducer::produce(edm::Event& iEvent, const edm::EventSetup
       return;
   }
 
-
   // Step C: Invoke the algorithm, passing in inputs and getting back outputs.
-  theAlgo_.run(inputCoder.product(),outTranscoder->getHcalCompressor().get(),
-	       *hbheDigis,  *hfDigis, *result, &(*pG), rctlsb);
+  if (upgrade_) {
+    theAlgo_.run(inputCoder.product(),outTranscoder->getHcalCompressor().get(), outTranscoder.product(),
+             *hbheUpgradeDigis,  *hfUpgradeDigis, *up_result, &(*pG), rctlsb);
+  } else {
+    theAlgo_.run(inputCoder.product(),outTranscoder->getHcalCompressor().get(), outTranscoder.product(),
+             *hbheDigis,  *hfDigis, *result, &(*pG), rctlsb);
+  }
 
   // Step C.1: Run FE Format Error / ZS for real data.
   if (runFrontEndFormatError_) {
@@ -145,7 +162,8 @@ void HcalTrigPrimDigiProducer::produce(edm::Event& iEvent, const edm::EventSetup
   //  edm::LogInfo("HcalTrigPrimDigiProducer") << "HcalTrigPrims: " << result->size();
 
   // Step D: Put outputs into event
-  iEvent.put(result);
+  // iEvent.put(result);
+  iEvent.put(up_result);
 }
 
 

@@ -16,10 +16,13 @@ using namespace std;
 
 
 CaloTPGTranscoderULUT::CaloTPGTranscoderULUT(const std::string& compressionFile,
-                                             const std::string& decompressionFile)
+                                             const std::string& decompressionFile,
+                                             bool upgrade)
                                                 : nominal_gain_(0.), rctlsb_factor_(0.),
                                                   compressionFile_(compressionFile),
-                                                  decompressionFile_(decompressionFile)
+                                                  decompressionFile_(decompressionFile),
+                                                  upgrade_(upgrade),
+                                                  OUTPUT_LUT_SIZE(upgrade ? 0x10000 : 0x400)
 {
   for (int i = 0; i < NOUTLUTS; i++) outputLUT_[i] = 0;
 }
@@ -34,15 +37,18 @@ void CaloTPGTranscoderULUT::loadHCALCompress(HcalLutMetadata const& lutMetadata,
                                              HcalTrigTowerGeometry const& theTrigTowerGeometry) {
 // Initialize analytical compression LUT's here
    // TODO cms::Error log
-  if (OUTPUT_LUT_SIZE != (unsigned int) 0x400) std::cout << "Error: Analytic compression expects 10-bit LUT; found LUT with " << OUTPUT_LUT_SIZE << " entries instead" << std::endl;
+  if (OUTPUT_LUT_SIZE != (unsigned int) 0x10000) std::cout << "Error: Analytic compression expects 16-bit LUT; found LUT with " << OUTPUT_LUT_SIZE << " entries instead" << std::endl;
 
   std::vector<unsigned int> analyticalLUT(OUTPUT_LUT_SIZE, 0);
   std::vector<unsigned int> identityLUT(OUTPUT_LUT_SIZE, 0);
 
   // Compute compression LUT
   for (unsigned int i=0; i < OUTPUT_LUT_SIZE; i++) {
-	analyticalLUT[i] = (unsigned int)(sqrt(14.94*log(1.+i/14.94)*i) + 0.5);
-	identityLUT[i] = min(i,0xffu);
+    if (upgrade_)
+      analyticalLUT[i] = (unsigned int)(sqrt(14.94*log(1.+i/14.94/64.0)*i/64.0) + 0.5);
+    else
+      analyticalLUT[i] = (unsigned int)(sqrt(14.94*log(1.+i/14.94)*i) + 0.5);
+    identityLUT[i] = min(i,0xffu);
   }
  
   for (int ieta=-32; ieta <= 32; ieta++){
@@ -183,6 +189,8 @@ void CaloTPGTranscoderULUT::loadHCALUncompress(HcalLutMetadata const& lutMetadat
    }
 
    for (int ieta = -32; ieta <= 32; ++ieta){
+      if (ieta == 0)
+         continue;
 
       double eta_low = 0., eta_high = 0.;
 		theTrigTowerGeometry.towerEtaBounds(ieta,eta_low,eta_high); 
@@ -263,6 +271,22 @@ HcalTriggerPrimitiveSample CaloTPGTranscoderULUT::hcalCompress(const HcalTrigTow
   }
 
   return HcalTriggerPrimitiveSample(outputLUT_[itower][sample],fineGrain,0,0);
+}
+
+HcalUpgradeTriggerPrimitiveSample
+CaloTPGTranscoderULUT::hcalUpgradeCompress(const HcalTrigTowerDetId& id, unsigned int sample, bool fineGrain) const {
+  int ieta = id.ieta();
+  int iphi = id.iphi();
+  int itower = getOutputLUTId(ieta,iphi);
+
+  if (itower < 0) cms::Exception("Invalid Data") << "No trigger tower found for ieta, iphi = " << ieta << ", " << iphi;
+  if (sample >= OUTPUT_LUT_SIZE) {
+
+    throw cms::Exception("Out of Range") << "LUT has " << OUTPUT_LUT_SIZE << " entries for " << itower << " but " << sample << " was requested.";
+    sample=OUTPUT_LUT_SIZE - 1;
+  }
+
+  return HcalUpgradeTriggerPrimitiveSample(outputLUT_[itower][sample],fineGrain,0,0);
 }
 
 double CaloTPGTranscoderULUT::hcaletValue(const int& ieta, const int& iphi, const int& compET) const {

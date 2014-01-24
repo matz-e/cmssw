@@ -1,6 +1,10 @@
 #include "SimCalorimetry/HcalTrigPrimAlgos/interface/HcalTriggerPrimitiveAlgo.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 
+#include "FWCore/Framework/interface/ESHandle.h"
+#include "CalibFormats/CaloTPG/interface/CaloTPGTranscoder.h"
+#include "CalibFormats/CaloTPG/interface/CaloTPGRecord.h"
+
 #include <iostream>
 #include "DataFormats/HcalDetId/interface/HcalDetId.h"
 #include "Geometry/HcalTowerAlgo/interface/HcalTrigTowerGeometry.h"
@@ -12,17 +16,107 @@
 
 using namespace std;
 
+std::pair<double, double>
+timing(const HcalUpgradeDataFrame& frame) {
+   int n = frame.size();
+   double ft = -999.;
+   double rt = -999.;
+   int sig_bx = frame.presamples();
+   int dir = -1;
+   int step = 1;
+   int i = sig_bx;
+   int nbins = 50;
+
+   while ((i > 2) && (i < frame.size() - 2) && (i < n) && ((rt < -998.) || (ft < 998.))) {
+      unsigned rise = frame.tdc(i) % 100;
+      unsigned fall = frame.tdc(i) / 100;
+
+      if (rt < -998. && rise != 62 && rise != 63) {
+         rt = rise * 25. / nbins + (i - sig_bx) * 25.;
+      }
+      if (((ft < -998.) || (ft < rt)) && 
+            (fall != 62) && (fall != 63)) {
+         ft = fall * 25. / nbins + (i - sig_bx) * 25.;
+      }
+
+      i += dir * step;
+      ++step;
+      dir *= -1;
+   }
+
+   /* if (rt > -998 or ft > -998) */
+   /*    std::cout << "rise " << rt << " fall " << ft << std::endl; */
+
+   return {rt, ft};
+}
+
+void
+update(HcalUpgradeTriggerPrimitiveDigi& digi, const Sample& sample, int soi)
+{
+   std::vector<double> rise_avg;
+   std::vector<double> rise_rms;
+   std::vector<double> fall_avg;
+   std::vector<double> fall_rms;
+   std::vector<int> linearized;
+   std::vector<int> oot;
+
+   for (int i = 0; i < 5; ++i) {
+      auto rise = sample.rise(i);
+      if (rise.size() > 0) {
+         double avg = std::accumulate(rise.begin(), rise.end(), 0.) / rise.size();
+         double sqrs = std::accumulate(rise.begin(), rise.end(), 0., [](double x, double y) { return x + y * y; });
+
+         rise_avg.push_back(avg);
+         rise_rms.push_back(sqrt(sqrs / rise.size() - avg * avg));
+      } else {
+         rise_avg.push_back(-1e6);
+         rise_rms.push_back(-1e6);
+      }
+
+      auto fall = sample.fall(i);
+      if (fall.size() > 0) {
+         double avg = std::accumulate(fall.begin(), fall.end(), 0.) / fall.size();
+         double sqrs = std::accumulate(fall.begin(), fall.end(), 0., [](double x, double y) { return x + y * y; });
+
+         fall_avg.push_back(avg);
+         fall_rms.push_back(sqrt(sqrs / fall.size() - avg * avg));
+      } else {
+         fall_avg.push_back(-1e6);
+         fall_rms.push_back(-1e6);
+      }
+
+      /* std::cout << "rise "; */
+      /* for (const auto& v: rise) */
+      /*    std::cout << v << " "; */
+      /* std::cout << "-> " << rise_avg.back() << std::endl; */
+      /* std::cout << "fall "; */
+      /* for (const auto& v: fall) */
+      /*    std::cout << v << " "; */
+      /* std::cout << "-> " << fall_avg.back() << std::endl; */
+
+      linearized.push_back(sample[i][soi]);
+      oot.push_back(sample(i)[soi]);
+   }
+
+   digi.setDepthData(linearized);
+   digi.setOOTData(oot);
+   digi.setTimingData(rise_avg, rise_rms, fall_avg, fall_rms);
+}
+
 HcalTriggerPrimitiveAlgo::HcalTriggerPrimitiveAlgo( bool pf, const std::vector<double>& w, int latency,
                                                     uint32_t FG_threshold, uint32_t ZS_threshold,
                                                     int numberOfSamples, int numberOfPresamples,
-                                                    uint32_t minSignalThreshold, uint32_t PMT_NoiseThreshold)
-                                                   : incoder_(0), outcoder_(0),
+                                                    uint32_t minSignalThreshold, uint32_t PMT_NoiseThreshold,
+                                                    bool upgrade)
+                                                   : incoder_(0), outcoder_(0), coder_(0),
                                                    theThreshold(0), peakfind_(pf), weights_(w), latency_(latency),
                                                    FG_threshold_(FG_threshold), ZS_threshold_(ZS_threshold),
                                                    numberOfSamples_(numberOfSamples),
                                                    numberOfPresamples_(numberOfPresamples),
                                                    minSignalThreshold_(minSignalThreshold),
                                                    PMT_NoiseThreshold_(PMT_NoiseThreshold),
+                                                   upgrade_(upgrade),
+                                                   sample_mask_(upgrade ? 0xFFFF : 0x3FF),
                                                    peak_finder_algorithm_(2)
 {
    //No peak finding setting (for Fastsim)
@@ -36,47 +130,6 @@ HcalTriggerPrimitiveAlgo::HcalTriggerPrimitiveAlgo( bool pf, const std::vector<d
 
 
 HcalTriggerPrimitiveAlgo::~HcalTriggerPrimitiveAlgo() {
-}
-
-
-void HcalTriggerPrimitiveAlgo::run(const HcalTPGCoder* incoder,
-                                   const HcalTPGCompressor* outcoder,
-                                   const HBHEDigiCollection& hbheDigis,
-                                   const HFDigiCollection& hfDigis,
-                                   HcalTrigPrimDigiCollection& result,
-				   const HcalTrigTowerGeometry* trigTowerGeometry,
-                                   float rctlsb) {
-   theTrigTowerGeometry = trigTowerGeometry;
-    
-   incoder_=dynamic_cast<const HcaluLUTTPGCoder*>(incoder);
-   outcoder_=outcoder;
-
-   theSumMap.clear();
-   theTowerMapFGSum.clear();
-   HF_Veto.clear();
-   fgMap_.clear();
-
-   // do the HB/HE digis
-   for(HBHEDigiCollection::const_iterator hbheItr = hbheDigis.begin();
-   hbheItr != hbheDigis.end(); ++hbheItr) {
-      addSignal(*hbheItr);
-   }
-
-   // and the HF digis
-   for(HFDigiCollection::const_iterator hfItr = hfDigis.begin();
-   hfItr != hfDigis.end(); ++hfItr) {
-      addSignal(*hfItr);
-
-   }
-
-   for(SumMap::iterator mapItr = theSumMap.begin(); mapItr != theSumMap.end(); ++mapItr) {
-      result.push_back(HcalTriggerPrimitiveDigi(mapItr->first));
-      HcalTrigTowerDetId detId(mapItr->second.id());
-      if(detId.ietaAbs() >= theTrigTowerGeometry->firstHFTower())
-         { analyzeHF(mapItr->second, result.back(), rctlsb);}
-         else{analyze(mapItr->second, result.back());}
-   }
-   return;
 }
 
 
@@ -162,11 +215,107 @@ void HcalTriggerPrimitiveAlgo::addSignal(const HFDataFrame & frame) {
 }
 
 
-void HcalTriggerPrimitiveAlgo::addSignal(const IntegerCaloSamples & samples) {
+void HcalTriggerPrimitiveAlgo::addSignal(const HcalUpgradeDataFrame& frame) {
+   int depth = HcalDetId(frame.id()).depth();
+   auto ids = theTrigTowerGeometry->towerIds(frame.id());
+
+   if (ids.size() > 0 && ids[0].ietaAbs() >= theTrigTowerGeometry->firstHFTower()) {
+      // HF
+      if (true) {
+      /* if(frame.id().depth() == 1 || frame.id().depth() == 2) { */
+         assert(ids.size() == 1);
+         IntegerCaloSamples samples(ids[0], frame.size());
+         samples.setPresamples(frame.presamples());
+         incoder_->adc2Linear(frame, samples);
+
+         // Don't add to final collection yet
+         // HF PMT veto sum is calculated in analyzerHF()
+         IntegerCaloSamples zero_samples(ids[0], frame.size());
+         zero_samples.setPresamples(frame.presamples());
+         addSignal(zero_samples, depth, timing(frame));
+
+         // Mask off depths: fgid is the same for both depths
+         uint32_t fgid = (frame.id().rawId() | 0x1c000) ;
+
+         if ( theTowerMapFGSum.find(ids[0]) == theTowerMapFGSum.end() ) {
+            SumFGContainer sumFG;
+            theTowerMapFGSum.insert(std::pair<HcalTrigTowerDetId, SumFGContainer >(ids[0], sumFG));
+
+            // Add a depth level
+            DepthFGMap depthFGmap;
+            theTowerMapFGDepth.insert(std::pair<HcalTrigTowerDetId, DepthFGMap>(ids[0], depthFGmap));
+         }
+
+         SumFGContainer& sumFG = theTowerMapFGSum[ids[0]];
+         SumFGContainer::iterator sumFGItr;
+         for ( sumFGItr = sumFG.begin(); sumFGItr != sumFG.end(); ++sumFGItr) {
+            if (sumFGItr->id() == fgid) break;
+         }
+         // If find
+         if (sumFGItr != sumFG.end()) {
+            for (int i=0; i<samples.size(); ++i) (*sumFGItr)[i] += samples[i];
+         }
+         else {
+            //Copy samples (change to fgid)
+            IntegerCaloSamples sumFGSamples(DetId(fgid), samples.size());
+            sumFGSamples.setPresamples(samples.presamples());
+            for (int i=0; i<samples.size(); ++i) sumFGSamples[i] = samples[i];
+            sumFG.push_back(sumFGSamples);
+         }
+
+         DepthFGMap& depthFGmap = theTowerMapFGDepth[ids[0]];
+         if (depthFGmap.find(fgid) == depthFGmap.end()) {
+            depthFGmap.insert(std::make_pair(fgid, Sample()));
+         }
+
+         depthFGmap[fgid].add(depth, samples, timing(frame));
+
+         // set veto to true if Long or Short less than threshold
+         if (HF_Veto.find(fgid) == HF_Veto.end()) {
+            vector<bool> vetoBits(samples.size(), false);
+            HF_Veto[fgid] = vetoBits;
+         }
+         for (int i=0; i<samples.size(); ++i)
+            if (samples[i] < minSignalThreshold_)
+               HF_Veto[fgid][i] = true;
+      }
+   } else if (ids.size() > 0) {
+      // HBHE
+      assert(ids.size() == 1 || ids.size() == 2);
+
+      IntegerCaloSamples samples1(ids[0], int(frame.size()));
+
+      samples1.setPresamples(frame.presamples());
+      incoder_->adc2Linear(frame, samples1);
+
+      std::vector<bool> msb;
+      incoder_->lookupMSB(frame, msb);
+
+      if (ids.size() == 2) {
+         IntegerCaloSamples samples2(ids[1], samples1.size());
+         for (int i = 0; i < samples1.size(); ++i) {
+            // FIXME if the original value of samples1[i] is odd, we loose a
+            // count.
+            samples1[i] = uint32_t(samples1[i] * 0.5);
+            samples2[i] = samples1[i];
+         }
+         samples2.setPresamples(frame.presamples());
+         addSignal(samples2, depth, timing(frame));
+         addFG(ids[1], msb);
+      }
+
+      addSignal(samples1, depth, timing(frame));
+      addFG(ids[0], msb);
+   }
+}
+
+
+void HcalTriggerPrimitiveAlgo::addSignal(const IntegerCaloSamples & samples, int depth, const std::pair<double, double>& tdc) {
    HcalTrigTowerDetId id(samples.id());
    SumMap::iterator itr = theSumMap.find(id);
    if(itr == theSumMap.end()) {
       theSumMap.insert(std::make_pair(id, samples));
+      theDepthMap.insert(std::make_pair(id, Sample()));
    }
    else {
       // wish CaloSamples had a +=
@@ -174,10 +323,14 @@ void HcalTriggerPrimitiveAlgo::addSignal(const IntegerCaloSamples & samples) {
          (itr->second)[i] += samples[i];
       }
    }
+
+   theDepthMap[id].add(depth, samples, tdc);
 }
 
 
-void HcalTriggerPrimitiveAlgo::analyze(IntegerCaloSamples & samples, HcalTriggerPrimitiveDigi & result) {
+void HcalTriggerPrimitiveAlgo::analyze(IntegerCaloSamples & samples, HcalTriggerPrimitiveDigi & result) {}
+
+void HcalTriggerPrimitiveAlgo::analyze(IntegerCaloSamples & samples, HcalUpgradeTriggerPrimitiveDigi & result) {
    int shrink = weights_.size() - 1;
    std::vector<bool>& msb = fgMap_[samples.id()];
    IntegerCaloSamples sum(samples.id(), samples.size());
@@ -194,6 +347,8 @@ void HcalTriggerPrimitiveAlgo::analyze(IntegerCaloSamples & samples, HcalTrigger
       //else if (algosumvalue>0x3FF) sum[ibin]=0x3FF;
       else sum[ibin] = algosumvalue;              //assign value to sum[]
    }
+
+   std::vector<int> depth_sums(5, 0);
 
    // Align digis and TP
    int dgPresamples=samples.presamples(); 
@@ -236,28 +391,52 @@ void HcalTriggerPrimitiveAlgo::analyze(IntegerCaloSamples & samples, HcalTrigger
          }
 
          if (isPeak){
-            output[ibin] = std::min<unsigned int>(sum[idx],0x3FF);
+            output[ibin] = std::min<unsigned int>(sum[idx], sample_mask_);
             finegrain[ibin] = msb[idx];
+            // Only provide depth information for the SOI.  This is the
+            // energy value used downstream, even if the peak is found for
+            // another sample.
+            if (ibin == numberOfPresamples_) {
+               for (int d = 0; d < 5; ++d) {
+                  auto algosumvalue = 0;
+                  for (unsigned int i = 0; i < weights_.size(); ++i)
+                     algosumvalue += int(theDepthMap[samples.id()][d][idx + i] * weights_[i]);
+                  depth_sums[d] += std::min<unsigned int>(algosumvalue, sample_mask_);
+               }
+            }
+         } else {
+            output[ibin] = 0;
          }
-         // Not a peak
-         else output[ibin] = 0;
       }
       else { // No peak finding, just output running sum
-         output[ibin] = std::min<unsigned int>(sum[idx],0x3FF);
+         output[ibin] = std::min<unsigned int>(sum[idx], sample_mask_);
          finegrain[ibin] = msb[idx];
+
+         // See comment above.
+         if (ibin == numberOfPresamples_) {
+            for (int d = 0; d < 5; ++d) {
+               auto algosumvalue = 0;
+               for (unsigned int i = 0; i < weights_.size(); ++i)
+                  algosumvalue += int(theDepthMap[samples.id()][d][idx + i] * weights_[i]);
+               depth_sums[d] += std::min<unsigned int>(algosumvalue, sample_mask_);
+            }
+         }
       }
 
       // Only Pegged for 1-TS algo.
       if (peak_finder_algorithm_ == 1) {
-         if (samples[idx] >= 0x3FF)
-            output[ibin] = 0x3FF;
+         if (samples[idx] >= sample_mask_)
+            output[ibin] = sample_mask_;
       }
    }
-   outcoder_->compress(output, finegrain, result);
+
+   update(result, theDepthMap[samples.id()], numberOfPresamples_);
 }
 
 
-void HcalTriggerPrimitiveAlgo::analyzeHF(IntegerCaloSamples & samples, HcalTriggerPrimitiveDigi & result, float rctlsb) {
+void HcalTriggerPrimitiveAlgo::analyzeHF(IntegerCaloSamples & samples, HcalTriggerPrimitiveDigi & result, float rctlsb) {}
+
+void HcalTriggerPrimitiveAlgo::analyzeHF(IntegerCaloSamples & samples, HcalUpgradeTriggerPrimitiveDigi & result, float rctlsb) {
    HcalTrigTowerDetId detId(samples.id());
 
    // Align digis and TP
@@ -279,11 +458,18 @@ void HcalTriggerPrimitiveAlgo::analyzeHF(IntegerCaloSamples & samples, HcalTrigg
    TowerMapFGSum::const_iterator tower2fg = theTowerMapFGSum.find(detId);
    assert(tower2fg != theTowerMapFGSum.end());
 
+   Sample depths;
+
    const SumFGContainer& sumFG = tower2fg->second;
    // Loop over all L+S pairs that mapped from samples.id()
    // Note: 1 samples.id() = 6 x (L+S) without noZS
    for (SumFGContainer::const_iterator sumFGItr = sumFG.begin(); sumFGItr != sumFG.end(); ++sumFGItr) {
       const std::vector<bool>& veto = HF_Veto[sumFGItr->id().rawId()];
+
+      // FIXME still needed?
+      if (!veto[numberOfSamples_])
+         depths += theTowerMapFGDepth[detId][sumFGItr->id()];
+
       for (int ibin = 0; ibin < tpSamples; ++ibin) {
          int idx = ibin + shift;
          // if not vetod, add L+S to total sum and calculate FG
@@ -301,9 +487,11 @@ void HcalTriggerPrimitiveAlgo::analyzeHF(IntegerCaloSamples & samples, HcalTrigg
    for (int ibin = 0; ibin < tpSamples; ++ibin) {
       int idx = ibin + shift;
       output[ibin] = samples[idx] / (rctlsb == 0.25 ? 4 : 8);
-      if (output[ibin] > 0x3FF) output[ibin] = 0x3FF;
+      if (output[ibin] > sample_mask_) output[ibin] = sample_mask_;
    }
    outcoder_->compress(output, finegrain, result);
+
+   update(result, depths, numberOfPresamples_);
 }
 
 void HcalTriggerPrimitiveAlgo::runZS(HcalTrigPrimDigiCollection & result){

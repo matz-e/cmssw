@@ -8,6 +8,7 @@
 #include "DataFormats/HcalDigi/interface/HcalUpgradeDataFrame.h"
 #include "DataFormats/HcalDigi/interface/HcalCalibDataFrame.h"
 #include "DataFormats/HcalDigi/interface/HcalTriggerPrimitiveDigi.h"
+#include "DataFormats/HcalDigi/interface/HcalUpgradeTriggerPrimitiveDigi.h"
 #include "DataFormats/HcalDigi/interface/HcalHistogramDigi.h"
 #include "DataFormats/HcalDigi/interface/ZDCDataFrame.h"
 #include "DataFormats/HcalDigi/interface/CastorDataFrame.h"
@@ -25,6 +26,7 @@ typedef edm::SortedCollection<HcalUpgradeDataFrame> HBHEUpgradeDigiCollection;
 typedef edm::SortedCollection<HcalUpgradeDataFrame> HFUpgradeDigiCollection;
 typedef edm::SortedCollection<HcalCalibDataFrame> HcalCalibDigiCollection;
 typedef edm::SortedCollection<HcalTriggerPrimitiveDigi> HcalTrigPrimDigiCollection;
+typedef edm::SortedCollection<HcalUpgradeTriggerPrimitiveDigi> HcalUpgradeTrigPrimDigiCollection;
 typedef edm::SortedCollection<HcalHistogramDigi> HcalHistogramDigiCollection;
 typedef edm::SortedCollection<ZDCDataFrame> ZDCDigiCollection;
 typedef edm::SortedCollection<CastorDataFrame> CastorDigiCollection;
