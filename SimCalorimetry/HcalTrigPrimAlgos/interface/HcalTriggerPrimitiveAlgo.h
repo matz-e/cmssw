@@ -23,14 +23,15 @@ public:
                            int latency,
                            uint32_t FG_threshold, uint32_t ZS_threshold,
                            int numberOfSamples, int numberOfPresamples,
-                           uint32_t minSignalThreshold=0, uint32_t PMT_NoiseThreshold=0);
+                           uint32_t minSignalThreshold=0, uint32_t PMT_NoiseThreshold=0, bool upgrade=false);
   ~HcalTriggerPrimitiveAlgo();
 
+  template<typename HBHEColl, typename HFColl, typename TPColl>
   void run(const HcalTPGCoder* incoder,
            const HcalTPGCompressor* outcoder,
-           const HBHEDigiCollection& hbheDigis,
-           const HFDigiCollection& hfDigis,
-           HcalTrigPrimDigiCollection& result,
+           const HBHEColl& hbheDigis,
+           const HFColl& hfDigis,
+           TPColl& result,
 	   const HcalTrigTowerGeometry* trigTowerGeometry,
            float rctlsb);
 
@@ -44,6 +45,7 @@ public:
   /// adds the signal to the map
   void addSignal(const HBHEDataFrame & frame);
   void addSignal(const HFDataFrame & frame);
+  void addSignal(const HcalUpgradeDataFrame& frame);
   void addSignal(const IntegerCaloSamples & samples);
   void addFG(const HcalTrigTowerDetId& id, std::vector<bool>& msb);
 
@@ -65,6 +67,8 @@ public:
   int numberOfPresamples_;
   uint32_t minSignalThreshold_;
   uint32_t PMT_NoiseThreshold_; 
+
+  bool upgrade_;
 
   // Algo1: isPeak = TS[i-1] < TS[i] && TS[i] >= TS[i+1]
   // Algo2: isPeak = TSS[i-1] < TSS[i] && TSS[i] >= TSS[i+1],
@@ -99,4 +103,45 @@ public:
   typedef std::map<HcalTrigTowerDetId, std::vector<bool> > FGbitMap;
   FGbitMap fgMap_;
 };
+
+template<typename HBHEColl, typename HFColl, typename TPColl>
+void HcalTriggerPrimitiveAlgo::run(const HcalTPGCoder* incoder,
+                                   const HcalTPGCompressor* outcoder,
+                                   const HBHEColl& hbheDigis,
+                                   const HFColl& hfDigis,
+                                   TPColl& result,
+				   const HcalTrigTowerGeometry* trigTowerGeometry,
+                                   float rctlsb) {
+   theTrigTowerGeometry = trigTowerGeometry;
+    
+   incoder_=dynamic_cast<const HcaluLUTTPGCoder*>(incoder);
+   outcoder_=outcoder;
+
+   theSumMap.clear();
+   theTowerMapFGSum.clear();
+   HF_Veto.clear();
+   fgMap_.clear();
+
+   // do the HB/HE digis
+   for(const auto& digi: hbheDigis) {
+      addSignal(digi);
+   }
+
+   // and the HF digis
+   for(const auto& digi: hfDigis) {
+      addSignal(digi);
+   }
+
+   for(SumMap::iterator mapItr = theSumMap.begin(); mapItr != theSumMap.end(); ++mapItr) {
+      result.push_back(HcalTriggerPrimitiveDigi(mapItr->first));
+      HcalTrigTowerDetId detId(mapItr->second.id());
+      if (detId.ietaAbs() >= theTrigTowerGeometry->firstHFTower()) {
+         analyzeHF(mapItr->second, result.back(), rctlsb);
+      } else{
+         analyze(mapItr->second, result.back());
+      }
+   }
+   return;
+}
+
 #endif

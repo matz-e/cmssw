@@ -15,7 +15,8 @@ using namespace std;
 HcalTriggerPrimitiveAlgo::HcalTriggerPrimitiveAlgo( bool pf, const std::vector<double>& w, int latency,
                                                     uint32_t FG_threshold, uint32_t ZS_threshold,
                                                     int numberOfSamples, int numberOfPresamples,
-                                                    uint32_t minSignalThreshold, uint32_t PMT_NoiseThreshold)
+                                                    uint32_t minSignalThreshold, uint32_t PMT_NoiseThreshold,
+                                                    bool upgrade)
                                                    : incoder_(0), outcoder_(0),
                                                    theThreshold(0), peakfind_(pf), weights_(w), latency_(latency),
                                                    FG_threshold_(FG_threshold), ZS_threshold_(ZS_threshold),
@@ -23,6 +24,7 @@ HcalTriggerPrimitiveAlgo::HcalTriggerPrimitiveAlgo( bool pf, const std::vector<d
                                                    numberOfPresamples_(numberOfPresamples),
                                                    minSignalThreshold_(minSignalThreshold),
                                                    PMT_NoiseThreshold_(PMT_NoiseThreshold),
+                                                   upgrade_(upgrade),
                                                    peak_finder_algorithm_(2)
 {
    //No peak finding setting (for Fastsim)
@@ -32,51 +34,12 @@ HcalTriggerPrimitiveAlgo::HcalTriggerPrimitiveAlgo( bool pf, const std::vector<d
    }
    // Switch to integer for comparisons - remove compiler warning
    ZS_threshold_I_ = ZS_threshold_;
+
+   std::cout << "UPGRADE MODE: " << upgrade_ << std::endl;
 }
 
 
 HcalTriggerPrimitiveAlgo::~HcalTriggerPrimitiveAlgo() {
-}
-
-
-void HcalTriggerPrimitiveAlgo::run(const HcalTPGCoder* incoder,
-                                   const HcalTPGCompressor* outcoder,
-                                   const HBHEDigiCollection& hbheDigis,
-                                   const HFDigiCollection& hfDigis,
-                                   HcalTrigPrimDigiCollection& result,
-				   const HcalTrigTowerGeometry* trigTowerGeometry,
-                                   float rctlsb) {
-   theTrigTowerGeometry = trigTowerGeometry;
-    
-   incoder_=dynamic_cast<const HcaluLUTTPGCoder*>(incoder);
-   outcoder_=outcoder;
-
-   theSumMap.clear();
-   theTowerMapFGSum.clear();
-   HF_Veto.clear();
-   fgMap_.clear();
-
-   // do the HB/HE digis
-   for(HBHEDigiCollection::const_iterator hbheItr = hbheDigis.begin();
-   hbheItr != hbheDigis.end(); ++hbheItr) {
-      addSignal(*hbheItr);
-   }
-
-   // and the HF digis
-   for(HFDigiCollection::const_iterator hfItr = hfDigis.begin();
-   hfItr != hfDigis.end(); ++hfItr) {
-      addSignal(*hfItr);
-
-   }
-
-   for(SumMap::iterator mapItr = theSumMap.begin(); mapItr != theSumMap.end(); ++mapItr) {
-      result.push_back(HcalTriggerPrimitiveDigi(mapItr->first));
-      HcalTrigTowerDetId detId(mapItr->second.id());
-      if(detId.ietaAbs() >= theTrigTowerGeometry->firstHFTower())
-         { analyzeHF(mapItr->second, result.back(), rctlsb);}
-         else{analyze(mapItr->second, result.back());}
-   }
-   return;
 }
 
 
@@ -159,6 +122,40 @@ void HcalTriggerPrimitiveAlgo::addSignal(const HFDataFrame & frame) {
          if (samples[i] < minSignalThreshold_)
             HF_Veto[fgid][i] = true;
    }
+}
+
+
+void HcalTriggerPrimitiveAlgo::addSignal(const HcalUpgradeDataFrame& frame) {
+   auto ids = theTrigTowerGeometry->towerIds(frame.id());
+   if (frame.presamples() > 10) {
+      std::cout << "FIXME Skipping " << ids.size() << '\t' << ids[0].ieta() << '\t' << ids[0].iphi() << '\t' << ids[0].depth() << '\t' << frame.size() << '\t' << frame.presamples() << std::endl;
+      return;
+   }
+
+   assert(ids.size() == 1 || ids.size() == 2);
+   IntegerCaloSamples samples1(ids[0], int(frame.size()));
+
+   samples1.setPresamples(frame.presamples());
+   incoder_->adc2Linear(frame, samples1);
+
+   std::vector<bool> msb;
+   incoder_->lookupMSB(frame, msb);
+
+   if (ids.size() == 2) {
+      IntegerCaloSamples samples2(ids[1], samples1.size());
+      for (int i = 0; i < samples1.size(); ++i) {
+         // FIXME if the original value of samples1[i] is odd, we loose a
+         // count.
+         samples1[i] = uint32_t(samples1[i] * 0.5);
+         samples2[i] = samples1[i];
+      }
+      samples2.setPresamples(frame.presamples());
+      addSignal(samples2);
+      addFG(ids[1], msb);
+   }
+
+   addSignal(samples1);
+   addFG(ids[0], msb);
 }
 
 
@@ -257,20 +254,22 @@ void HcalTriggerPrimitiveAlgo::analyzeHF(IntegerCaloSamples & samples, HcalTrigg
    assert(shift >=  0);
    assert((shift + numberOfSamples_) <=  samples.size());
 
-   TowerMapFGSum::const_iterator tower2fg = theTowerMapFGSum.find(detId);
-   assert(tower2fg != theTowerMapFGSum.end());
+   if (!upgrade_) {
+      TowerMapFGSum::const_iterator tower2fg = theTowerMapFGSum.find(detId);
+      assert(tower2fg != theTowerMapFGSum.end());
 
-   const SumFGContainer& sumFG = tower2fg->second;
-   // Loop over all L+S pairs that mapped from samples.id()
-   // Note: 1 samples.id() = 6 x (L+S) without noZS
-   for (SumFGContainer::const_iterator sumFGItr = sumFG.begin(); sumFGItr != sumFG.end(); ++sumFGItr) {
-      const std::vector<bool>& veto = HF_Veto[sumFGItr->id().rawId()];
-      for (int ibin = 0; ibin < numberOfSamples_; ++ibin) {
-         int idx = ibin + shift;
-         // if not vetod, add L+S to total sum and calculate FG
-         if (!(veto[idx] && (*sumFGItr)[idx] > PMT_NoiseThreshold_)) {
-            samples[idx] += (*sumFGItr)[idx];
-            finegrain[ibin] = (finegrain[ibin] || (*sumFGItr)[idx] >= FG_threshold_);
+      const SumFGContainer& sumFG = tower2fg->second;
+      // Loop over all L+S pairs that mapped from samples.id()
+      // Note: 1 samples.id() = 6 x (L+S) without noZS
+      for (SumFGContainer::const_iterator sumFGItr = sumFG.begin(); sumFGItr != sumFG.end(); ++sumFGItr) {
+         const std::vector<bool>& veto = HF_Veto[sumFGItr->id().rawId()];
+         for (int ibin = 0; ibin < numberOfSamples_; ++ibin) {
+            int idx = ibin + shift;
+            // if not vetod, add L+S to total sum and calculate FG
+            if (!(veto[idx] && (*sumFGItr)[idx] > PMT_NoiseThreshold_)) {
+               samples[idx] += (*sumFGItr)[idx];
+               finegrain[ibin] = (finegrain[ibin] || (*sumFGItr)[idx] >= FG_threshold_);
+            }
          }
       }
    }

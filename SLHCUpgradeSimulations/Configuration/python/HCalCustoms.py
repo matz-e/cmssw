@@ -125,6 +125,7 @@ def customise_Digi(process):
         process.mix.digitizers.hcal.HFUpgradeQIE = True
         process.mix.digitizers.hcal.HcalReLabel.RelabelHits=cms.untracked.bool(True)
         process.mix.digitizers.hcal.doTimeSlew = False
+
     if hasattr(process,'simHcalDigis'):
         process.simHcalDigis.useConfigZSvalues=cms.int32(1)
         process.simHcalDigis.HBlevel=cms.int32(16)
@@ -132,8 +133,15 @@ def customise_Digi(process):
         process.simHcalDigis.HOlevel=cms.int32(8)
         process.simHcalDigis.HFlevel=cms.int32(10)
 
-    process.digitisation_step.remove(process.simHcalTriggerPrimitiveDigis)
+    if hasattr(process, 'simHcalTriggerPrimitiveDigis'):
+        process.simHcalTriggerPrimitiveDigis.upgrade = cms.bool(True)
+        process.simHcalTriggerPrimitiveDigis.inputLabel = cms.VInputTag(
+                cms.InputTag("mix", "HBHEUpgradeDigiCollection", "DIGI2RAW"),
+                cms.InputTag("mix", "HFUpgradeDigiCollection", "DIGI2RAW"))
+    # process.digitisation_step.remove(process.simHcalTriggerPrimitiveDigis)
     process.digitisation_step.remove(process.simHcalTTPDigis)
+    # process.dump = cms.EDAnalyzer("EventContentAnalyzer")
+    # process.digitisation_step *= process.dump
     
     return process
 
