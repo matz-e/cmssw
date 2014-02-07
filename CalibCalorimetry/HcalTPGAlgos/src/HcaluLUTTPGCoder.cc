@@ -379,6 +379,12 @@ void HcaluLUTTPGCoder::lookupMSB(const HBHEDataFrame& df, std::vector<bool>& msb
       msb[i] = getMSB(df.id(), df.sample(i).adc());
 }
 
+void HcaluLUTTPGCoder::lookupMSB(const HcalUpgradeDataFrame& df, std::vector<bool>& msb) const{
+   msb.resize(df.size());
+   for (int i=0; i<df.size(); ++i)
+      msb[i] = getMSB(df.id(), df.adc(i));
+}
+
 bool HcaluLUTTPGCoder::getMSB(const HcalDetId& id, int adc) const{
    int lutId = getLUTId(id);
    const Lut& lut = inputLUT_.at(lutId);
