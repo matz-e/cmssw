@@ -31,6 +31,7 @@ private:
 
   bool runFrontEndFormatError_;
 
+  bool upgrade_;
 };
 
 #endif

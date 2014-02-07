@@ -34,12 +34,14 @@ HcalTrigPrimDigiProducer::HcalTrigPrimDigiProducer(const edm::ParameterSet& ps)
 	  ps.getParameter<int>("numberOfSamples"),
 	  ps.getParameter<int>("numberOfPresamples"),
       ps.getParameter<uint32_t>("MinSignalThreshold"),
-      ps.getParameter<uint32_t>("PMTNoiseThreshold")
+      ps.getParameter<uint32_t>("PMTNoiseThreshold"),
+      ps.getParameter<bool>("upgrade")
    ),
   inputLabel_(ps.getParameter<std::vector<edm::InputTag> >("inputLabel")),
   inputTagFEDRaw_(ps.getParameter<edm::InputTag> ("InputTagFEDRaw")),
   runZS_(ps.getParameter<bool>("RunZS")),
-  runFrontEndFormatError_(ps.getParameter<bool>("FrontEndFormatError"))
+  runFrontEndFormatError_(ps.getParameter<bool>("FrontEndFormatError")),
+  upgrade_(ps.getParameter<bool>("upgrade"))
 {
    produces<HcalTrigPrimDigiCollection>();
    theAlgo_.setPeakFinderAlgorithm(ps.getParameter<int>("PeakFinderAlgorithm"));
@@ -68,16 +70,23 @@ void HcalTrigPrimDigiProducer::produce(edm::Event& iEvent, const edm::EventSetup
 
   edm::Handle<HBHEDigiCollection> hbheDigis;
   edm::Handle<HFDigiCollection>   hfDigis;
+  edm::Handle<HBHEUpgradeDigiCollection> hbheUpDigis;
+  edm::Handle<HFUpgradeDigiCollection>   hfUpDigis;
 
-  iEvent.getByLabel(inputLabel_[0],hbheDigis);
-  iEvent.getByLabel(inputLabel_[1],hfDigis);
+  if (upgrade_) {
+    iEvent.getByLabel(inputLabel_[0],hbheUpDigis);
+    iEvent.getByLabel(inputLabel_[1],hfUpDigis);
+  } else {
+    iEvent.getByLabel(inputLabel_[0],hbheDigis);
+    iEvent.getByLabel(inputLabel_[1],hfDigis);
+  }
 
   // protect here against missing input collections
   // there is no protection in HcalTriggerPrimitiveAlgo
 
-  if (!hbheDigis.isValid()) {
+  if (!hbheDigis.isValid() && !(upgrade_ && hbheUpDigis.isValid())) {
       edm::LogInfo("HcalTrigPrimDigiProducer")
-              << "\nWarning: HBHEDigiCollection with input tag "
+              << "\nWarning: HBHE(Upgrade)DigiCollection with input tag "
               << inputLabel_[0]
               << "\nrequested in configuration, but not found in the event."
               << "\nQuit returning empty product." << std::endl;
@@ -90,9 +99,9 @@ void HcalTrigPrimDigiProducer::produce(edm::Event& iEvent, const edm::EventSetup
       return;
   }
 
-  if (!hfDigis.isValid()) {
+  if (!hfDigis.isValid() && !(upgrade_ && hfUpDigis.isValid())) {
       edm::LogInfo("HcalTrigPrimDigiProducer")
-              << "\nWarning: HFDigiCollection with input tag "
+              << "\nWarning: HF(Upgrade)DigiCollection with input tag "
               << inputLabel_[1]
               << "\nrequested in configuration, but not found in the event."
               << "\nQuit returning empty product." << std::endl;
@@ -105,10 +114,14 @@ void HcalTrigPrimDigiProducer::produce(edm::Event& iEvent, const edm::EventSetup
       return;
   }
 
-
   // Step C: Invoke the algorithm, passing in inputs and getting back outputs.
-  theAlgo_.run(inputCoder.product(),outTranscoder->getHcalCompressor().get(),
-	       *hbheDigis,  *hfDigis, *result, &(*pG), rctlsb);
+  if (upgrade_) {
+    theAlgo_.run(inputCoder.product(),outTranscoder->getHcalCompressor().get(),
+             *hbheUpDigis,  *hfUpDigis, *result, &(*pG), rctlsb);
+  } else {
+    theAlgo_.run(inputCoder.product(),outTranscoder->getHcalCompressor().get(),
+             *hbheDigis,  *hfDigis, *result, &(*pG), rctlsb);
+  }
 
   // Step C.1: Run FE Format Error / ZS for real data.
   if (runFrontEndFormatError_) {
