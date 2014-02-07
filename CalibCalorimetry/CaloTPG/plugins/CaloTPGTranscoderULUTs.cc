@@ -19,6 +19,7 @@
 
 
 // system include files
+#include <iostream>
 #include <memory>
 
 // user include files
@@ -140,7 +141,8 @@ CaloTPGTranscoderULUTs::produce(const CaloTPGRecord& iRecord)
      //return pTCoder;
        file1 = hfilename1_.fullPath();
    } else {
-	 edm::LogInfo("Level1") << "Using analytical compression and RCT decompression for CaloTPGTranscoderULUTs HCAL initialization";
+     std::cout << "Using analytical compression and RCT decompression for CaloTPGTranscoderULUTs HCAL initialization" << std::endl;
+     // edm::LogInfo("Level1") << "Using analytical compression and RCT decompression for CaloTPGTranscoderULUTs HCAL initialization";
 	 //std::auto_ptr<CaloTPGTranscoder> pTCoder(new CaloTPGTranscoderULUT());
 	 //return pTCoder;
    }
