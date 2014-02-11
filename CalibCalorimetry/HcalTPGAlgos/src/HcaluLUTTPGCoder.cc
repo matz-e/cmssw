@@ -289,8 +289,6 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
                   }
                }  // endif HBHE
                else if (subdet == HcalForward){
-                  HFDataFrame frame(cell);
-                  frame.setSize(1);
                   CaloSamples samples(cell, 1);
 
                   float one_adc2fC = 0.0;
@@ -299,19 +297,40 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
                   one_adc2fC /= 4.0;
                   // Lumi offset of 1 adc (in fC) for the four rings used to measure lumi
                   float offset = (abs(ieta) >= 33 && abs(ieta) <= 36) ? one_adc2fC : 0; 
-                  
-                  // QIE 8, still?
-                  for (unsigned int adc = 0; adc < 256; ++adc) {
-                     frame.setSample(0,HcalQIESample(adc));
-                     coder.adc2fC(frame,samples);
-                     float adc2fC = samples[0];
-                     if (isMasked) inputLUT_[lutId][adc] = 0;
-                     // FIXME do we need to watch out for that final 0x3FF?
-                     else inputLUT_[lutId][adc] = std::min(std::max(0,int((adc2fC - ped + offset) * gain * rcalib / lsb_ / cosh_ieta[abs(ieta)] )), 0x3FF);
+
+                  if (channelCoder->qieIndex() == 0) {
+                     // QIE 8, still?
+                     HFDataFrame frame(cell);
+                     frame.setSize(1);
+
+                     for (unsigned int adc = 0; adc < 128; ++adc) {
+                        frame.setSample(0,HcalQIESample(adc));
+                        coder.adc2fC(frame,samples);
+                        float adc2fC = samples[0];
+                        if (isMasked) inputLUT_[lutId][adc] = 0;
+                        // FIXME do we need to watch out for that final 0x3FF?
+                        else inputLUT_[lutId][adc] = std::min(std::max(0,int((adc2fC - ped + offset) * gain * rcalib / lsb_ / cosh_ieta[abs(ieta)] )), 0x3FF);
+                     }
+                     for (unsigned int adc = 128; adc < INPUT_LUT_SIZE; ++adc) {
+                        inputLUT_[lutId][adc] = 0;
+                     }
+                  } else {
+                     // QIE 10
+                     HcalUpgradeDataFrame frame(cell);
+                     frame.setSize(1);
+                     CaloSamples samples(cell, 1);
+
+                     for (unsigned int adc = 0; adc < 256; ++adc) {
+                        frame.setSample(0, adc, 0, true);
+                        coder.adc2fC(frame, samples);
+                        float adc2fC = samples[0];
+
+                        if (isMasked) inputLUT_[lutId][adc] = 0;
+                        // FIXME do we need to watch out for that final 0x3FF?
+                        else inputLUT_[lutId][adc] = std::min(std::max(0,int((adc2fC - ped + offset) * gain * rcalib / lsb_ / cosh_ieta[abs(ieta)] )), 0x3FF);
+                     }
                   }
-                  for (unsigned int adc = 128; adc < INPUT_LUT_SIZE; ++adc) {
-                     inputLUT_[lutId][adc] = 0;
-                  }
+
                } // endif HF
             } // for depth
          } // for iphi
