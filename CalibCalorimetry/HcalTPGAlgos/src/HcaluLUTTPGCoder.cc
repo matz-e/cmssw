@@ -30,9 +30,10 @@ HcaluLUTTPGCoder::HcaluLUTTPGCoder(bool legacy) :
    LegacyMode_(legacy),
    LUTGenerationMode_(true),
    bitToMask_(0),
+   max_depth(legacy ? legacy_max_depth : upgrade_max_depth),
    nluts(legacy ? legacy_nluts : upgrade_nluts),
    INPUT_LUT_SIZE(legacy ? legacy_INPUT_LUT_SIZE : upgrade_INPUT_LUT_SIZE),
-   max_depth(legacy ? legacy_max_depth : upgrade_max_depth),
+   OUTPUT_MASK(0x3FF),
    inputLUT_(nluts, Lut(INPUT_LUT_SIZE, 0)),
    gain_(nluts, 0.), ped_ (nluts, 0.){
 }
@@ -156,7 +157,7 @@ void HcaluLUTTPGCoder::update(const char* filename, const HcalTopology& theTopo,
                      // MSB = Most Significant Bit = bit 10
                      // Overwrite bit 10
                      LutElement msb = (lutFromFile[i][adc] != 0 ? 0x400 : 0);
-                     inputLUT_[lutId][adc] = (msb | (inputLUT_[lutId][adc] & 0x3FF));
+                     inputLUT_[lutId][adc] = (msb | (inputLUT_[lutId][adc] & OUTPUT_MASK));
                   }
                   else inputLUT_[lutId][adc] = lutFromFile[i][adc];
                }// for adc
@@ -265,8 +266,7 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
                         float adc2fC = samples[0];
 
                         if (isMasked) inputLUT_[lutId][adc] = 0;
-                        // FIXME do we need to watch out for that final 0x3FF?
-                        else inputLUT_[lutId][adc] = (LutElement) std::min(std::max(0, int((adc2fC -ped) * gain * rcalib / nominalgain_ / granularity)), 0x3FF);
+                        else inputLUT_[lutId][adc] = (LutElement) std::min(std::max(0, int((adc2fC -ped) * gain * rcalib / nominalgain_ / granularity)), OUTPUT_MASK);
                      }
                      for (unsigned int adc = 128; adc < INPUT_LUT_SIZE; ++adc) {
                         inputLUT_[lutId][adc] = 0;
@@ -283,8 +283,7 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
                         float adc2fC = samples[0];
 
                         if (isMasked) inputLUT_[lutId][adc] = 0;
-                        // FIXME do we need to watch out for that final 0x3FF?
-                        else inputLUT_[lutId][adc] = (LutElement) std::min(std::max(0, int((adc2fC -ped) * gain * rcalib / nominalgain_ / granularity)), 0x3FF);
+                        else inputLUT_[lutId][adc] = (LutElement) std::min(std::max(0, int((adc2fC -ped) * gain * rcalib / nominalgain_ / granularity)), OUTPUT_MASK);
                      }
                   }
                }  // endif HBHE
@@ -308,8 +307,7 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
                         coder.adc2fC(frame,samples);
                         float adc2fC = samples[0];
                         if (isMasked) inputLUT_[lutId][adc] = 0;
-                        // FIXME do we need to watch out for that final 0x3FF?
-                        else inputLUT_[lutId][adc] = std::min(std::max(0,int((adc2fC - ped + offset) * gain * rcalib / lsb_ / cosh_ieta[abs(ieta)] )), 0x3FF);
+                        else inputLUT_[lutId][adc] = std::min(std::max(0,int((adc2fC - ped + offset) * gain * rcalib / lsb_ / cosh_ieta[abs(ieta)] )), OUTPUT_MASK);
                      }
                      for (unsigned int adc = 128; adc < INPUT_LUT_SIZE; ++adc) {
                         inputLUT_[lutId][adc] = 0;
@@ -326,8 +324,7 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
                         float adc2fC = samples[0];
 
                         if (isMasked) inputLUT_[lutId][adc] = 0;
-                        // FIXME do we need to watch out for that final 0x3FF?
-                        else inputLUT_[lutId][adc] = std::min(std::max(0,int((adc2fC - ped + offset) * gain * rcalib / lsb_ / cosh_ieta[abs(ieta)] )), 0x3FF);
+                        else inputLUT_[lutId][adc] = std::min(std::max(0,int((adc2fC - ped + offset) * gain * rcalib / lsb_ / cosh_ieta[abs(ieta)] )), OUTPUT_MASK);
                      }
                   }
 
@@ -342,8 +339,7 @@ void HcaluLUTTPGCoder::adc2Linear(const HBHEDataFrame& df, IntegerCaloSamples& i
    int lutId = getLUTId(df.id());
    const Lut& lut = inputLUT_.at(lutId);
    for (int i=0; i<df.size(); i++){
-      // FIXME do we need to watch out for that final 0x3FF?
-      ics[i] = (lut.at(df[i].adc()) & 0x3FF);
+      ics[i] = (lut.at(df[i].adc()) & OUTPUT_MASK);
    }
 }
 
@@ -351,8 +347,7 @@ void HcaluLUTTPGCoder::adc2Linear(const HFDataFrame& df, IntegerCaloSamples& ics
    int lutId = getLUTId(df.id());
    const Lut& lut = inputLUT_.at(lutId);
    for (int i=0; i<df.size(); i++){
-      // FIXME do we need to watch out for that final 0x3FF?
-      ics[i] = (lut.at(df[i].adc()) & 0x3FF);
+      ics[i] = (lut.at(df[i].adc()) & OUTPUT_MASK);
    }
 }
 
@@ -360,21 +355,18 @@ void HcaluLUTTPGCoder::adc2Linear(const HcalUpgradeDataFrame& df, IntegerCaloSam
    int lutId = getLUTId(df.id());
    const Lut& lut = inputLUT_.at(lutId);
    for (int i=0; i<df.size(); i++){
-      // FIXME do we need to watch out for that final 0x3FF?
-      ics[i] = (lut.at(df[i].adc()) & 0x3FF);
+      ics[i] = (lut.at(df[i].adc()) & OUTPUT_MASK);
    }
 }
 
 unsigned short HcaluLUTTPGCoder::adc2Linear(HcalQIESample sample, HcalDetId id) const {
    int lutId = getLUTId(id);
-   // FIXME do we need to watch out for that final 0x3FF?
-   return ((inputLUT_.at(lutId)).at(sample.adc()) & 0x3FF);
+   return ((inputLUT_.at(lutId)).at(sample.adc()) & OUTPUT_MASK);
 }
 
 unsigned short HcaluLUTTPGCoder::adc2Linear(HcalUpgradeQIESample sample, HcalDetId id) const {
    int lutId = getLUTId(id);
-   // FIXME do we need to watch out for that final 0x3FF?
-   return ((inputLUT_.at(lutId)).at(sample.adc()) & 0x3FF);
+   return ((inputLUT_.at(lutId)).at(sample.adc()) & OUTPUT_MASK);
 }
 
 float HcaluLUTTPGCoder::getLUTPedestal(HcalDetId id) const {
@@ -407,6 +399,8 @@ void HcaluLUTTPGCoder::lookupMSB(const HcalUpgradeDataFrame& df, std::vector<boo
 bool HcaluLUTTPGCoder::getMSB(const HcalDetId& id, int adc) const{
    int lutId = getLUTId(id);
    const Lut& lut = inputLUT_.at(lutId);
-   // FIXME do we need to watch out for that final 0x400?
-   return (lut.at(adc) & 0x400);
+   // TODO make sure this is correct:
+   // was lut.at(adc) & 0x400
+   // OUTPUT_MASK has standard value 0x3FF
+   return (lut.at(adc) & (OUTPUT_MASK + 1));
 }

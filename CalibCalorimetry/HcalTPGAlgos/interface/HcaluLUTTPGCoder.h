@@ -69,7 +69,10 @@ private:
   bool LegacyMode_;
   bool LUTGenerationMode_;
   int bitToMask_;
-  size_t nluts, INPUT_LUT_SIZE, max_depth;
+  size_t max_depth;
+  size_t nluts;
+  size_t INPUT_LUT_SIZE;
+  int OUTPUT_MASK;
   std::vector< Lut > inputLUT_;
   std::vector<float> gain_;
   std::vector<float> ped_;
