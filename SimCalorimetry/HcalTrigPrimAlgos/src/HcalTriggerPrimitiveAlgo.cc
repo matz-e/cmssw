@@ -127,35 +127,95 @@ void HcalTriggerPrimitiveAlgo::addSignal(const HFDataFrame & frame) {
 
 void HcalTriggerPrimitiveAlgo::addSignal(const HcalUpgradeDataFrame& frame) {
    auto ids = theTrigTowerGeometry->towerIds(frame.id());
-   if (frame.presamples() > 10) {
-      std::cout << "FIXME Skipping " << ids.size() << '\t' << ids[0].ieta() << '\t' << ids[0].iphi() << '\t' << ids[0].depth() << '\t' << frame.size() << '\t' << frame.presamples() << std::endl;
-      return;
-   }
 
-   assert(ids.size() == 1 || ids.size() == 2);
-   IntegerCaloSamples samples1(ids[0], int(frame.size()));
+   if (ids.size() > 0 && ids[0].ietaAbs() >= theTrigTowerGeometry->firstHFTower()) {
+      // HF
+      if(frame.id().depth() == 1 || frame.id().depth() == 2) {
+         assert(ids.size() == 1);
+         IntegerCaloSamples samples(ids[0], frame.size());
+         samples.setPresamples(frame.presamples());
+         incoder_->adc2Linear(frame, samples);
 
-   samples1.setPresamples(frame.presamples());
-   incoder_->adc2Linear(frame, samples1);
+         // Don't add to final collection yet
+         // HF PMT veto sum is calculated in analyzerHF()
+         IntegerCaloSamples zero_samples(ids[0], frame.size());
+         zero_samples.setPresamples(frame.presamples());
+         addSignal(zero_samples);
 
-   std::vector<bool> msb;
-   incoder_->lookupMSB(frame, msb);
+         // Mask off depths: fgid is the same for both depths
+         uint32_t fgid = (frame.id().rawId() | 0x1c000) ;
 
-   if (ids.size() == 2) {
-      IntegerCaloSamples samples2(ids[1], samples1.size());
-      for (int i = 0; i < samples1.size(); ++i) {
-         // FIXME if the original value of samples1[i] is odd, we loose a
-         // count.
-         samples1[i] = uint32_t(samples1[i] * 0.5);
-         samples2[i] = samples1[i];
+         if ( theTowerMapFGSum.find(ids[0]) == theTowerMapFGSum.end() ) {
+            SumFGContainer sumFG;
+            theTowerMapFGSum.insert(std::pair<HcalTrigTowerDetId, SumFGContainer >(ids[0], sumFG));
+         }
+
+         SumFGContainer& sumFG = theTowerMapFGSum[ids[0]];
+         SumFGContainer::iterator sumFGItr;
+         for ( sumFGItr = sumFG.begin(); sumFGItr != sumFG.end(); ++sumFGItr) {
+            if (sumFGItr->id() == fgid) break;
+         }
+         // If find
+         if (sumFGItr != sumFG.end()) {
+            for (int i=0; i<samples.size(); ++i) (*sumFGItr)[i] += samples[i];
+         }
+         else {
+            //Copy samples (change to fgid)
+            IntegerCaloSamples sumFGSamples(DetId(fgid), samples.size());
+            sumFGSamples.setPresamples(samples.presamples());
+            for (int i=0; i<samples.size(); ++i) sumFGSamples[i] = samples[i];
+            sumFG.push_back(sumFGSamples);
+         }
+
+         // set veto to true if Long or Short less than threshold
+         if (HF_Veto.find(fgid) == HF_Veto.end()) {
+            vector<bool> vetoBits(samples.size(), false);
+            HF_Veto[fgid] = vetoBits;
+         }
+         for (int i=0; i<samples.size(); ++i)
+            if (samples[i] < minSignalThreshold_)
+               HF_Veto[fgid][i] = true;
       }
-      samples2.setPresamples(frame.presamples());
-      addSignal(samples2);
-      addFG(ids[1], msb);
-   }
+   } else if (ids.size() > 0) {
+      // HBHE
+      if (frame.presamples() > 10) {
+         std::cout << "FIXME Skipping " << ids.size() << '\t' << ids[0].ieta() << '\t' << ids[0].iphi() << '\t' << ids[0].depth() << '\t' << frame.size() << '\t' << frame.presamples() << std::endl;
+         return;
+      }
 
-   addSignal(samples1);
-   addFG(ids[0], msb);
+      assert(ids.size() == 1 || ids.size() == 2);
+      IntegerCaloSamples samples1(ids[0], int(frame.size()));
+
+      samples1.setPresamples(frame.presamples());
+      incoder_->adc2Linear(frame, samples1);
+
+      std::vector<bool> msb;
+      incoder_->lookupMSB(frame, msb);
+
+      if (ids[0].ieta() == 1 && ids[0].iphi() == 2) {
+         std::cout << "INPUT" << ids.size() << std::endl << frame << std::endl;
+         std::cout << "ADD" << std::endl << samples1 << std::endl;
+      }
+
+      if (ids.size() == 2) {
+         if (ids[1].ieta() == 1 && ids[1].iphi() == 2) {
+            std::cout << "INPUT" << ids.size() << std::endl << frame << std::endl;
+         }
+         IntegerCaloSamples samples2(ids[1], samples1.size());
+         for (int i = 0; i < samples1.size(); ++i) {
+            // FIXME if the original value of samples1[i] is odd, we loose a
+            // count.
+            samples1[i] = uint32_t(samples1[i] * 0.5);
+            samples2[i] = samples1[i];
+         }
+         samples2.setPresamples(frame.presamples());
+         addSignal(samples2);
+         addFG(ids[1], msb);
+      }
+
+      addSignal(samples1);
+      addFG(ids[0], msb);
+   }
 }
 
 
