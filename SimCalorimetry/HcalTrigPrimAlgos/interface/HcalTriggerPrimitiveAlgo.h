@@ -11,6 +11,7 @@
 #include "CalibFormats/CaloTPG/interface/HcalTPGCompressor.h"
 #include "CondFormats/HcalObjects/interface/HcalElectronicsMap.h"
 #include "DataFormats/FEDRawData/interface/FEDRawDataCollection.h"
+#include "CalibFormats/CaloTPG/interface/CaloTPGTranscoder.h"
 
 #include <map>
 #include <vector>
@@ -29,6 +30,7 @@ public:
   template<typename HBHEColl, typename HFColl, typename TPColl>
   void run(const HcalTPGCoder* incoder,
            const HcalTPGCompressor* outcoder,
+           const CaloTPGTranscoder* coder,
            const HBHEColl& hbheDigis,
            const HFColl& hfDigis,
            TPColl& result,
@@ -56,6 +58,7 @@ public:
    // Member initialized by constructor
   const HcaluLUTTPGCoder* incoder_;
   const HcalTPGCompressor* outcoder_;
+  const CaloTPGTranscoder* coder_;
   double theThreshold;
   bool peakfind_;
   std::vector<double> weights_;
@@ -107,6 +110,7 @@ public:
 template<typename HBHEColl, typename HFColl, typename TPColl>
 void HcalTriggerPrimitiveAlgo::run(const HcalTPGCoder* incoder,
                                    const HcalTPGCompressor* outcoder,
+                                   const CaloTPGTranscoder* coder,
                                    const HBHEColl& hbheDigis,
                                    const HFColl& hfDigis,
                                    TPColl& result,
@@ -116,6 +120,7 @@ void HcalTriggerPrimitiveAlgo::run(const HcalTPGCoder* incoder,
     
    incoder_=dynamic_cast<const HcaluLUTTPGCoder*>(incoder);
    outcoder_=outcoder;
+   coder_=coder;
 
    theSumMap.clear();
    theTowerMapFGSum.clear();
@@ -141,6 +146,8 @@ void HcalTriggerPrimitiveAlgo::run(const HcalTPGCoder* incoder,
          analyze(mapItr->second, result.back());
       }
    }
+
+   std::cout << "TPALGO DONE" << std::endl;
    return;
 }
 

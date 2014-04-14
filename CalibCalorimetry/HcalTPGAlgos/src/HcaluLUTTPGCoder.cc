@@ -260,6 +260,10 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
                      frame.setSize(1);
                      CaloSamples samples(cell, 1);
 
+                     if (ieta == 1 && iphi == 1) {
+                        std::cout << ">>> depth " << depth << ": LUT ID " << lutId << " (" << LUTGenerationMode_ << ")" << std::endl;
+                     }
+
                      for (unsigned int adc = 0; adc < 128; ++adc) {
                         frame.setSample(0,HcalQIESample(adc));
                         coder.adc2fC(frame,samples);
@@ -267,6 +271,9 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
 
                         if (isMasked) inputLUT_[lutId][adc] = 0;
                         else inputLUT_[lutId][adc] = (LutElement) std::min(std::max(0, int((adc2fC -ped) * gain * rcalib / nominalgain_ / granularity)), OUTPUT_MASK);
+
+                        if (ieta == 1 && iphi == 1)
+                           std::cout << ">>> " << adc << " => " << inputLUT_[lutId][adc] << std::endl;
                      }
                      for (unsigned int adc = 128; adc < INPUT_LUT_SIZE; ++adc) {
                         inputLUT_[lutId][adc] = 0;
@@ -277,6 +284,14 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
                      frame.setSize(1);
                      CaloSamples samples(cell, 1);
 
+                     if (ieta == 1 && iphi == 1) {
+                        std::cout << ">>> depth " << depth << ": LUT ID " << lutId << " (" << LUTGenerationMode_ << ")" << std::endl;
+                        std::cout << "    gain " << gain << std::endl
+                           << "    rcalib " << rcalib << std::endl
+                           << "    granul " << granularity << std::endl
+                           << "    ped    " << ped << std::endl;
+                     }
+
                      for (unsigned int adc = 0; adc < 256; ++adc) {
                         frame.setSample(0, adc, 0, true);
                         coder.adc2fC(frame, samples);
@@ -284,6 +299,9 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
 
                         if (isMasked) inputLUT_[lutId][adc] = 0;
                         else inputLUT_[lutId][adc] = (LutElement) std::min(std::max(0, int((adc2fC -ped) * gain * rcalib / nominalgain_ / granularity)), OUTPUT_MASK);
+
+                        if (ieta == 1 && iphi == 1)
+                           std::cout << ">>> " << adc << " => " << inputLUT_[lutId][adc] << std::endl;
                      }
                   }
                }  // endif HBHE
@@ -338,6 +356,7 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
 void HcaluLUTTPGCoder::adc2Linear(const HBHEDataFrame& df, IntegerCaloSamples& ics) const {
    int lutId = getLUTId(df.id());
    const Lut& lut = inputLUT_.at(lutId);
+   std::cout << "LUT " << lut.size() << std::endl;
    for (int i=0; i<df.size(); i++){
       ics[i] = (lut.at(df[i].adc()) & OUTPUT_MASK);
    }
@@ -355,6 +374,8 @@ void HcaluLUTTPGCoder::adc2Linear(const HcalUpgradeDataFrame& df, IntegerCaloSam
    int lutId = getLUTId(df.id());
    const Lut& lut = inputLUT_.at(lutId);
    for (int i=0; i<df.size(); i++){
+      std::cout << "ADC " << df[i].adc() << " (" << INPUT_LUT_SIZE << ")"
+         << " -> " << (lut.at(df[i].adc()) & OUTPUT_MASK) << std::endl;
       ics[i] = (lut.at(df[i].adc()) & OUTPUT_MASK);
    }
 }

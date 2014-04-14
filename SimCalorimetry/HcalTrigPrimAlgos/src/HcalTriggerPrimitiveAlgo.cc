@@ -1,6 +1,10 @@
 #include "SimCalorimetry/HcalTrigPrimAlgos/interface/HcalTriggerPrimitiveAlgo.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 
+#include "FWCore/Framework/interface/ESHandle.h"
+#include "CalibFormats/CaloTPG/interface/CaloTPGTranscoder.h"
+#include "CalibFormats/CaloTPG/interface/CaloTPGRecord.h"
+
 #include <iostream>
 #include "DataFormats/HcalDetId/interface/HcalDetId.h"
 #include "Geometry/HcalTowerAlgo/interface/HcalTrigTowerGeometry.h"
@@ -17,7 +21,7 @@ HcalTriggerPrimitiveAlgo::HcalTriggerPrimitiveAlgo( bool pf, const std::vector<d
                                                     int numberOfSamples, int numberOfPresamples,
                                                     uint32_t minSignalThreshold, uint32_t PMT_NoiseThreshold,
                                                     bool upgrade)
-                                                   : incoder_(0), outcoder_(0),
+                                                   : incoder_(0), outcoder_(0), coder_(0),
                                                    theThreshold(0), peakfind_(pf), weights_(w), latency_(latency),
                                                    FG_threshold_(FG_threshold), ZS_threshold_(ZS_threshold),
                                                    numberOfSamples_(numberOfSamples),
@@ -128,8 +132,10 @@ void HcalTriggerPrimitiveAlgo::addSignal(const HFDataFrame & frame) {
 void HcalTriggerPrimitiveAlgo::addSignal(const HcalUpgradeDataFrame& frame) {
    auto ids = theTrigTowerGeometry->towerIds(frame.id());
 
+   std::cout << "ADD IN" << std::endl;
    if (ids.size() > 0 && ids[0].ietaAbs() >= theTrigTowerGeometry->firstHFTower()) {
       // HF
+      std::cout << "HF IN" << std::endl;
       if(frame.id().depth() == 1 || frame.id().depth() == 2) {
          assert(ids.size() == 1);
          IntegerCaloSamples samples(ids[0], frame.size());
@@ -176,27 +182,37 @@ void HcalTriggerPrimitiveAlgo::addSignal(const HcalUpgradeDataFrame& frame) {
             if (samples[i] < minSignalThreshold_)
                HF_Veto[fgid][i] = true;
       }
+      std::cout << "HF OUT" << std::endl;
    } else if (ids.size() > 0) {
       // HBHE
+      std::cout << "HBHE IN" << std::endl;
       if (frame.presamples() > 10) {
          std::cout << "FIXME Skipping " << ids.size() << '\t' << ids[0].ieta() << '\t' << ids[0].iphi() << '\t' << ids[0].depth() << '\t' << frame.size() << '\t' << frame.presamples() << std::endl;
          return;
       }
 
       assert(ids.size() == 1 || ids.size() == 2);
+
+      std::cout << "HBHE " << __LINE__ << std::endl;
       IntegerCaloSamples samples1(ids[0], int(frame.size()));
+      std::cout << "HBHE " << __LINE__ << std::endl;
 
       samples1.setPresamples(frame.presamples());
+      std::cout << "HBHE " << __LINE__ << std::endl;
+      std::cout << frame << std::endl;
       incoder_->adc2Linear(frame, samples1);
+      std::cout << "HBHE " << __LINE__ << std::endl;
 
       std::vector<bool> msb;
       incoder_->lookupMSB(frame, msb);
 
+      std::cout << "HBHE " << __LINE__ << std::endl;
       if (ids[0].ieta() == 1 && ids[0].iphi() == 2) {
          std::cout << "INPUT" << ids.size() << std::endl << frame << std::endl;
          std::cout << "ADD" << std::endl << samples1 << std::endl;
       }
 
+      std::cout << "HBHE " << __LINE__ << std::endl;
       if (ids.size() == 2) {
          if (ids[1].ieta() == 1 && ids[1].iphi() == 2) {
             std::cout << "INPUT" << ids.size() << std::endl << frame << std::endl;
@@ -212,10 +228,13 @@ void HcalTriggerPrimitiveAlgo::addSignal(const HcalUpgradeDataFrame& frame) {
          addSignal(samples2);
          addFG(ids[1], msb);
       }
+      std::cout << "HBHE " << __LINE__ << std::endl;
 
       addSignal(samples1);
       addFG(ids[0], msb);
+      std::cout << "HBHE OUT" << std::endl;
    }
+   std::cout << "ADD OUT" << std::endl;
 }
 
 
@@ -301,6 +320,16 @@ void HcalTriggerPrimitiveAlgo::analyze(IntegerCaloSamples & samples, HcalTrigger
             output[ibin] = 0x3FF;
       }
       outcoder_->compress(output, finegrain, result);
+   }
+
+   HcalTrigTowerDetId id(samples.id());
+   double et = coder_->hcaletValue(id.ieta(), id.iphi(), result.SOI_compressedEt());
+   if (id.ieta() == 1 && id.iphi() == 2) {
+      std::cout << "Depth " << id.depth() << std::endl;
+      std::cout << "SAMPLE" << std::endl << samples << std::endl;
+      std::cout << "OUTPUT" << std::endl << output << std::endl;
+      std::cout << "TP" << std::endl << result << std::endl;
+      std::cout << "ET " << et << std::endl;
    }
 }
 

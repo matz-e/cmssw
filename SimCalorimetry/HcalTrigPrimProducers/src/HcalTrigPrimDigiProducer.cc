@@ -116,10 +116,10 @@ void HcalTrigPrimDigiProducer::produce(edm::Event& iEvent, const edm::EventSetup
 
   // Step C: Invoke the algorithm, passing in inputs and getting back outputs.
   if (upgrade_) {
-    theAlgo_.run(inputCoder.product(),outTranscoder->getHcalCompressor().get(),
+    theAlgo_.run(inputCoder.product(),outTranscoder->getHcalCompressor().get(), outTranscoder.product(),
              *hbheUpDigis,  *hfUpDigis, *result, &(*pG), rctlsb);
   } else {
-    theAlgo_.run(inputCoder.product(),outTranscoder->getHcalCompressor().get(),
+    theAlgo_.run(inputCoder.product(),outTranscoder->getHcalCompressor().get(), outTranscoder.product(),
              *hbheDigis,  *hfDigis, *result, &(*pG), rctlsb);
   }
 
