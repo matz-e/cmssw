@@ -133,6 +133,9 @@ def customise_Digi(process):
         process.simHcalDigis.HOlevel=cms.int32(8)
         process.simHcalDigis.HFlevel=cms.int32(10)
 
+    if hasattr(process,'HcalTPGCoderULUT'):
+        process.HcalTPGCoderULUT.upgrade = cms.bool(True)
+
     if hasattr(process, 'simHcalTriggerPrimitiveDigis'):
         process.simHcalTriggerPrimitiveDigis.upgrade = cms.bool(True)
         process.simHcalTriggerPrimitiveDigis.inputLabel = cms.VInputTag(
