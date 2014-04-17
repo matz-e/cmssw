@@ -65,7 +65,8 @@ void CaloTPGTranscoderULUT::loadHCALCompress(HcalLutMetadata const& lutMetadata,
            outputLUT_[lutId][i] = 0;
 
         for (unsigned int i = threshold; i < OUTPUT_LUT_SIZE; ++i)
-           outputLUT_[lutId][i] = (abs(ieta) < theTrigTowerGeometry.firstHFTower()) ? analyticalLUT[i] : identityLUT[i];
+           outputLUT_[lutId][i] = (abs(ieta) < theTrigTowerGeometry->firstHFTower(id.version())) ? analyticalLUT[i] : identityLUT[i]; 
+        // TODO: UPDATE TO PRODUCE 1x1 output LUTs
      } //for iphi
   } //for ieta
 }
@@ -184,8 +185,10 @@ void CaloTPGTranscoderULUT::loadHCALUncompress(HcalLutMetadata const& lutMetadat
 
    for (int ieta = -32; ieta <= 32; ++ieta){
 
+      const int version_of_hcal_TPs = 0;
+
       double eta_low = 0., eta_high = 0.;
-		theTrigTowerGeometry.towerEtaBounds(ieta,eta_low,eta_high); 
+      theTrigTowerGeometry->towerEtaBounds(ieta,version_of_hcal_TPs,eta_low,eta_high); 
       double cosh_ieta = fabs(cosh((eta_low + eta_high)/2.));
 
 		for (int iphi = 1; iphi <= 72; iphi++) {
@@ -198,7 +201,7 @@ void CaloTPGTranscoderULUT::loadHCALUncompress(HcalLutMetadata const& lutMetadat
          double factor = 0.;
 
          // HF
-         if (abs(ieta) >= theTrigTowerGeometry.firstHFTower())
+         if (abs(ieta) >= theTrigTowerGeometry->firstHFTower(version_of_hcal_TPs))
             factor = rctlsb_factor_;
          // HBHE
          else 
