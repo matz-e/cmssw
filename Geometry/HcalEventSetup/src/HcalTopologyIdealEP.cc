@@ -74,6 +74,8 @@ HcalTopologyIdealEP::produce(const HcalRecNumberingRecord& iRecord) {
   iRecord.get( pHRNDC );
   const HcalDDDRecConstants* hdc = &(*pHRNDC);
 
+  auto tmode = hdc->getTriggerMode();
+
 #ifdef DebugLog
   std::cout << "mode = " << hdc->getTopoMode() << ", maxDepthHB = " 
 	    << hdc->getMaxDepth(0) << ", maxDepthHE = " << hdc->getMaxDepth(1) 
@@ -81,9 +83,10 @@ HcalTopologyIdealEP::produce(const HcalRecNumberingRecord& iRecord) {
   edm::LogInfo("HCAL") << "mode = " << hdc->getTopoMode() << ", maxDepthHB = " 
 		       << hdc->getMaxDepth(0) << ", maxDepthHE = " 
 		       << hdc->getMaxDepth(1) << ", maxDepthHF = " 
-		       << hdc->getMaxDepth(2);
+		       << hdc->getMaxDepth(2) << ", trigger mode = "
+             << tmode;
 #endif
-  ReturnType myTopo(new HcalTopology(hdc));
+  ReturnType myTopo(new HcalTopology(hdc, tmode));
 
   HcalTopologyRestrictionParser parser(*myTopo);
   if (!m_restrictions.empty()) {

@@ -146,19 +146,19 @@ HcalTopology::HcalTopology(HcalTopologyMode::Mode mode, int maxDepthHB, int maxD
   singlePhiBins_(72), doublePhiBins_(36),
   maxDepthHB_(maxDepthHB), maxDepthHE_(maxDepthHE), maxDepthHF_(2),
   etaHE2HF_(30), etaHF2HE_(29),
-  HBSize_(kHBSizePreLS1),
-  HESize_(kHESizePreLS1),
-  HOSize_(kHOSizePreLS1),
-  HFSize_(kHFSizePreLS1),
-  HTSize_(kHTSizePreLS1),
+  HBSize_(kHBSizePhase0),
+  HESize_(kHESizePhase0),
+  HOSize_(kHOSizePhase0),
+  HFSize_(kHFSizePhase0),
+  HTSize_(kHTSizePhase0),
   numberOfShapes_(( mode==HcalTopologyMode::SLHC ) ? 500 : 87 ) {
 
   if (mode_==HcalTopologyMode::LHC) {
     topoVersion_=0; //DL
-    HBSize_= kHBSizePreLS1; // qie-per-fiber * fiber/rm * rm/rbx * rbx/barrel * barrel/hcal
-    HESize_= kHESizePreLS1; // qie-per-fiber * fiber/rm * rm/rbx * rbx/endcap * endcap/hcal
-    HOSize_= kHOSizePreLS1; // ieta * iphi * 2
-    HFSize_= kHFSizePreLS1; // phi * eta * depth * pm
+    HBSize_= kHBSizePhase0; // qie-per-fiber * fiber/rm * rm/rbx * rbx/barrel * barrel/hcal
+    HESize_= kHESizePhase0; // qie-per-fiber * fiber/rm * rm/rbx * rbx/endcap * endcap/hcal
+    HOSize_= kHOSizePhase0; // ieta * iphi * 2
+    HFSize_= kHFSizePhase0; // phi * eta * depth * pm 
   } else if (mode_==HcalTopologyMode::SLHC) { // need to know more eventually
     HBSize_= maxDepthHB*16*72*2;
     HESize_= maxDepthHE*(29-16+1)*72*2;
@@ -169,11 +169,11 @@ HcalTopology::HcalTopology(HcalTopologyMode::Mode mode, int maxDepthHB, int maxD
   nEtaHB_ = (lastHBRing_-firstHBRing_+1);
   nEtaHE_ = (lastHERing_-firstHERing_+1);
   if (triggerMode_ == HcalTopologyMode::tm_LHC_RCT) {
-    HTSize_ = kHTSizePreLS1;
+    HTSize_ = kHTSizePhase0;
   } else if (triggerMode_ == HcalTopologyMode::tm_LHC_RCT_and_1x1) {
     HTSize_ = kHTSizePhase1;
   } else {
-    HTSize_ = kHTSizePhase1-kHTSizePreLS1;
+    HTSize_ = kHTSizePhase1-kHTSizePhase0;
   }
 
   edm::LogWarning("CaloTopology") << "This is an incomplete constructor of HcalTopology - be warned that many functionalities will not be there - revert from this - get from EventSetup";
@@ -181,7 +181,28 @@ HcalTopology::HcalTopology(HcalTopologyMode::Mode mode, int maxDepthHB, int maxD
 
 bool HcalTopology::valid(const DetId& id) const {
   assert(id.det()==DetId::Hcal);
+  if (HcalSubdetector(id.subdetId())==HcalTriggerTower) return validHT(id);
   return validHcal(id);
+}
+
+bool HcalTopology::validHT(const HcalTrigTowerDetId& id) const {
+  
+  if (id.iphi()<1 || id.iphi()>72 || id.ieta()==0) return false;
+  if (id.version()==0) {
+    if (id.ietaAbs()>32 || (triggerMode_==HcalTopologyMode::tm_LHC_1x1 && id.ietaAbs()>27)) return false;
+    if (id.ietaAbs()>28) {
+      int iphi=id.iphi();
+      if ((iphi/4)*4 + 1 != iphi) return false;
+      iphi = iphi/4 + 1;	  
+      if (iphi > 18) return false;
+    }
+  } else { // version==1
+    if (triggerMode_==HcalTopologyMode::tm_LHC_RCT) return false;
+    if (id.ietaAbs()<27 || id.ietaAbs()>41) return false;
+    if (id.ietaAbs()>29 && ((id.iphi()%2)==0)) return false;
+  }
+  return true;
+
 }
 
 bool HcalTopology::validHcal(const HcalDetId& id) const {
@@ -365,7 +386,7 @@ int HcalTopology::exclude(HcalSubdetector subdet, int ieta1, int ieta2, int iphi
 
   */
 
-bool HcalTopology::validDetIdPreLS1(const HcalDetId& id) const {
+bool HcalTopology::validDetIdPhase0(const HcalDetId& id) const {
   const HcalSubdetector sd (id.subdet());
   const int             ie (id.ietaAbs());
   const int             ip (id.iphi());
@@ -889,7 +910,7 @@ std::pair<double,double> HcalTopology::etaRange(HcalSubdetector subdet,
   return std::pair<double,double>(0,0);
 }
 
-unsigned int HcalTopology::detId2denseIdPreLS1 (const DetId& id) const {
+unsigned int HcalTopology::detId2denseIdPhase0 (const DetId& id) const {
 
   HcalDetId hid(id);
   const HcalSubdetector sd (hid.subdet()  ) ;
@@ -911,7 +932,7 @@ unsigned int HcalTopology::detId2denseIdPreLS1 (const DetId& id) const {
 			       ( ( sd == HcalForward ) ?
 				 2*kHBhalf + 2*kHEhalf + 2*kHOhalf + 
 				 ( ( ip - 1 )/4 )*4 + ( ( ip - 1 )/2 )*22 + 
-				 2*( ie - 29 ) + ( dp - 1 ) + zn*kHFhalf : 0xFFFFFFFFu ) ) ) ) ; 
+				 2*( ie - 29 ) + ( dp - 1 ) + zn*kHFhalfPhase0 : 0xFFFFFFFFu ) ) ) ) ; 
   return retval;
 }
 
@@ -981,7 +1002,7 @@ unsigned int HcalTopology::detId2denseIdHF(const DetId& id) const {
   unsigned int  retval = 0xFFFFFFFFu;
   if (topoVersion_==0) {
     retval = ( ( ip - 1 )/4 )*4 + ( ( ip - 1 )/2 )*22 + 
-      2*( ie - 29 ) + ( dp - 1 ) + zn*kHFhalf;
+      2*( ie - 29 ) + ( dp - 1 ) + zn*kHFhalfPhase0;
   } else if (topoVersion_==10) {
     retval=dp-1+2*(ip-1);
     if (hid.ieta()>0) retval+=maxDepthHF_*72*(hid.ieta()-29);
@@ -1001,10 +1022,10 @@ unsigned int HcalTopology::detId2denseIdHT(const DetId& id) const {
   if (ivers  == 0) {
     if ((iphi-1)%4==0) index = (iphi-1)*32 + (ietaAbs-1) - (12*((iphi-1)/4));
     else               index = (iphi-1)*28 + (ietaAbs-1) + (4*(((iphi-1)/4)+1));
-    if (zside == -1) index += kHThalf;
+    if (zside == -1) index += kHThalfPhase0;
   } else {
-    index = kHTSizePreLS1;
-    if (zside == -1) index += ((kHTSizePhase1-kHTSizePreLS1)/2);
+    index = kHTSizePhase0;
+    if (zside == -1) index += ((kHTSizePhase1-kHTSizePhase0)/2);
     index += (36 * (ietaAbs - 30) + ((iphi - 1)/2));
   }
 
@@ -1073,7 +1094,7 @@ unsigned int HcalTopology::detId2denseIdCALIB(const DetId& id) const {
 unsigned int HcalTopology::detId2denseId(const DetId& id) const {
   unsigned int retval(0);
   if (topoVersion_==0) { // pre-LS1
-    retval = detId2denseIdPreLS1(id);
+    retval = detId2denseIdPhase0(id);
   } else if (topoVersion_==10) {
     HcalDetId hid(id);
     if (hid.subdet()==HcalBarrel) {
@@ -1113,12 +1134,12 @@ DetId HcalTopology::denseId2detId(unsigned int denseid) const {
   int in ( denseid ) ;
   int iz ( 1 ) ;
   if (topoVersion_==0) { //DL// pre-LS1
-    if (denseid < kSizeForDenseIndexingPreLS1) {
+    if (denseid < kSizeForDenseIndexingPhase0) {
       if ( in > 2*( kHBhalf + kHEhalf + kHOhalf ) - 1 ) { // HF
 	sd  = HcalForward ;
 	in -= 2*( kHBhalf + kHEhalf + kHOhalf ) ; 
-	iz  = ( in<kHFhalf ? 1 : -1 ) ;
-	in %= kHFhalf ; 
+	iz  = ( in<kHFhalfPhase0 ? 1 : -1 ) ;
+	in %= kHFhalfPhase0 ; 
 	ip  = 4*( in/48 ) ;
 	in %= 48 ;
 	ip += 1 + ( in>21 ? 2 : 0 ) ;
@@ -1210,8 +1231,7 @@ DetId HcalTopology::denseId2detId(unsigned int denseid) const {
   return HcalDetId( sd, iz*int(ie), ip, dp );
 }
 
-unsigned int HcalTopology::ncells() const {
-  return HBSize_+HESize_+HOSize_+HFSize_;
+unsigned int HcalTopology::ncells() const {  return HBSize_+HESize_+HOSize_+HFSize_;
 }
 
 int HcalTopology::topoVersion() const {
