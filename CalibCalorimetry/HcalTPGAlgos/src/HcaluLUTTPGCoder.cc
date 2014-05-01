@@ -156,7 +156,7 @@ void HcaluLUTTPGCoder::update(const char* filename, const HcalTopology& theTopo,
                      // Append FG bit LUT to MSB
                      // MSB = Most Significant Bit = bit 10
                      // Overwrite bit 10
-                     LutElement msb = (lutFromFile[i][adc] != 0 ? 0x400 : 0);
+                     LutElement msb = (lutFromFile[i][adc] != 0 ? (OUTPUT_MASK + 1) : 0);
                      inputLUT_[lutId][adc] = (msb | (inputLUT_[lutId][adc] & OUTPUT_MASK));
                   }
                   else inputLUT_[lutId][adc] = lutFromFile[i][adc];
