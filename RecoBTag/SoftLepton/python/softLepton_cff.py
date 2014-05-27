@@ -8,3 +8,11 @@ from RecoBTag.SoftLepton.SoftLeptonByMLP_cfi import *
 from RecoBTag.SoftLepton.SoftLeptonByPt_cfi import *
 from RecoBTag.SoftLepton.SoftLeptonByIP3d_cfi import *
 from RecoBTag.SoftLepton.SoftLeptonByIP2d_cfi import *
+from RecoBTag.SoftLepton.softElectronCandProducer_cfi import *
+from RecoBTag.SoftLepton.softElectronTagInfos_cfi import *
+from RecoBTag.SoftLepton.softElectronByIP3dBJetTags_cfi import *
+from RecoBTag.SoftLepton.softElectronByPtBJetTags_cfi import *
+from RecoBTag.SoftLepton.softMuonTagInfos_cfi import *
+from RecoBTag.SoftLepton.softMuonBJetTags_cfi import *
+from RecoBTag.SoftLepton.softMuonByIP3dBJetTags_cfi import *
+from RecoBTag.SoftLepton.softMuonByPtBJetTags_cfi import *

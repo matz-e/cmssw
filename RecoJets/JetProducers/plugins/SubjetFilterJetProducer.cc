@@ -26,6 +26,7 @@
 
 
 #include "SubjetFilterJetProducer.h"
+
 #include "RecoJets/JetProducers/interface/JetSpecific.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
 
@@ -40,31 +41,41 @@ using namespace std;
 //______________________________________________________________________________
 SubjetFilterJetProducer::SubjetFilterJetProducer(const edm::ParameterSet& iConfig)
   : VirtualJetProducer(iConfig)
-  , alg_(iConfig.getParameter<string>  ("@module_label"),
-	 iConfig.getParameter<string>  ("jetAlgorithm"),
-	 iConfig.getParameter<unsigned>("nFatMax"),
-	 iConfig.getParameter<double>  ("rParam"),
-	 iConfig.getParameter<double>  ("rFilt"),
-	 iConfig.getParameter<double>  ("jetPtMin"),
-	 iConfig.getParameter<double>  ("massDropCut"),
-	 iConfig.getParameter<double>  ("asymmCut"),
-	 iConfig.getParameter<bool>    ("asymmCutLater"),
-	 iConfig.getParameter<bool>    ("doAreaFastjet"),
-	 iConfig.getParameter<double>  ("Ghost_EtaMax"),
-	 iConfig.getParameter<int>     ("Active_Area_Repeats"),
-	 iConfig.getParameter<double>  ("GhostArea"),
-	 iConfig.getUntrackedParameter<bool>("verbose",false))
+  , alg_(iConfig.getParameter<string>	("@module_label"),
+  		 iConfig.getParameter<bool> 	("verbose"),
+		 iConfig.getParameter<bool>     ("doAreaFastjet"),
+		 iConfig.getParameter<double>   ("rParam"),
+		 iConfig.getParameter<unsigned> ("nFatMax"),
+		 iConfig.getParameter<double>   ("jetPtMin"),
+		 iConfig.getParameter<double>   ("centralEtaCut"),
+		 iConfig.getParameter<double>   ("massDropCut"),
+		 iConfig.getParameter<double>   ("rFilt"),
+		 iConfig.getParameter<double>   ("asymmCut"),
+		 iConfig.getParameter<bool>     ("asymmCutLater")
+	 ),
+	 nSubJet_(iConfig.getParameter<double>("rParam"),
+			iConfig.getParameter<int>("nSubjettinessNmin"),
+			iConfig.getParameter<int>("nSubjettinessNmax")
+	 )
 {
-  produces<reco::BasicJetCollection>("fat");
-  makeProduces(moduleLabel_,"sub");
-  makeProduces(moduleLabel_,"filter");
+	produces<reco::BasicJetCollection>("fatjet");
+	makeProduces(moduleLabel_,"subjets");
+	makeProduces(moduleLabel_,"filterjets");
+
+	for(size_t N=nSubJet_.getNmin();N<=nSubJet_.getNmax();N++){
+		char tau_char[50];
+		sprintf (tau_char, "tau%i", (int) N);
+		std::string tau_string = tau_char;
+
+		produces<std::vector<double> >(tau_string);
+	}
 }
 
 
 //______________________________________________________________________________
 SubjetFilterJetProducer::~SubjetFilterJetProducer()
 {
-  
+
 }
 
 
@@ -90,8 +101,18 @@ void SubjetFilterJetProducer::endJob()
 //______________________________________________________________________________
 void SubjetFilterJetProducer::runAlgorithm(edm::Event& iEvent,
 					   const edm::EventSetup& iSetup)
-{
-  alg_.run(fjInputs_, fjCompoundJets_, iSetup);
+{ 
+  if ( !doAreaFastjet_ && !doRhoFastjet_) {
+    fjClusterSeq_ = ClusterSequencePtr( new fastjet::ClusterSequence( fjInputs_, *fjJetDefinition_ ) );
+  } else if (voronoiRfact_ <= 0) {
+    fjClusterSeq_ = ClusterSequencePtr( new fastjet::ClusterSequenceArea( fjInputs_, *fjJetDefinition_ , *fjAreaDefinition_ ) );
+  } else {
+    fjClusterSeq_ = ClusterSequencePtr( new fastjet::ClusterSequenceVoronoiArea( fjInputs_, *fjJetDefinition_ , fastjet::VoronoiAreaSpec(voronoiRfact_) ) );
+  }
+  
+  alg_.run(fjInputs_, fjCompoundJets_, fjClusterSeq_);
+  
+  nSubJet_.run(fjCompoundJets_);
 }
 
 
@@ -184,18 +205,18 @@ void SubjetFilterJetProducer::writeCompoundJets(edm::Event& iEvent,
       subJet.setJetArea(itSub->subjetArea());
       
       if (subJetIndex<2) {
-	subIndices[jetIndex].push_back(subJets->size());
-	subJets->push_back(subJet);
+			subIndices[jetIndex].push_back(subJets->size());
+			subJets->push_back(subJet);
       }
       else {
-	filterIndices[jetIndex].push_back(filterJets->size());
-	filterJets->push_back(subJet);
+			filterIndices[jetIndex].push_back(filterJets->size());
+			filterJets->push_back(subJet);
       }
     }
   }
   
-  subJetsAfterPut    = iEvent.put(subJets,   "sub");
-  filterJetsAfterPut = iEvent.put(filterJets,"filter");
+  subJetsAfterPut    = iEvent.put(subJets,   "subjets");
+  filterJetsAfterPut = iEvent.put(filterJets,"filterjets");
   
   vector<math::XYZTLorentzVector>::const_iterator itP4Begin(p4FatJets.begin());
   vector<math::XYZTLorentzVector>::const_iterator itP4End(p4FatJets.end());
@@ -224,11 +245,23 @@ void SubjetFilterJetProducer::writeCompoundJets(edm::Event& iEvent,
     }
 
     reco::Particle::Point point(0,0,0);
+	 
     fatJets->push_back(reco::BasicJet((*itP4),point,i_fatJetConstituents));
     fatJets->back().setJetArea(areaFatJets[fatIndex]);
   }
   
-  iEvent.put(fatJets,"fat");
+  iEvent.put(fatJets,"fatjet");
+  
+	for(size_t N=nSubJet_.getNmin();N<=nSubJet_.getNmax();N++){
+		auto_ptr< vector<double> > NSubjettiness(new vector<double>());
+		*NSubjettiness = nSubJet_.getNSubjettiness(N);
+		
+		char tau_char[50];
+		sprintf (tau_char, "tau%i", (int) N);
+		std::string tau_string = tau_char;
+		
+		iEvent.put(NSubjettiness, tau_string);
+	}
 }
 
 

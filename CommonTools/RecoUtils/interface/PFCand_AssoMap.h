@@ -13,10 +13,16 @@
 //
 // Original Author:  Matthias Geisler
 //         Created:  Wed Apr 18 14:48:37 CEST 2012
-// $Id: PFCand_AssoMap.h,v 1.8 2012/11/21 09:39:33 mgeisler Exp $
+// $Id: PFCand_AssoMap.h,v 1.4 2012/06/21 22:34:15 wmtan Exp $
 //
 //
+#include "CommonTools/RecoUtils/interface/PFCand_NoPU_WithAM.h"
 
+
+// system include files
+#include <memory>
+
+// user include files
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/EDProducer.h"
 
@@ -24,17 +30,35 @@
 #include "FWCore/Framework/interface/MakerMacros.h"
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
-
 #include "FWCore/Utilities/interface/InputTag.h"
 
-#include "CommonTools/RecoUtils/interface/PFCand_AssoMapAlgos.h"
+#include "DataFormats/Common/interface/AssociationMap.h"
+#include "DataFormats/Common/interface/Handle.h"
+#include "DataFormats/Common/interface/OneToManyWithQuality.h"
+#include "DataFormats/Common/interface/OneToManyWithQualityGeneric.h"
+#include "DataFormats/Common/interface/View.h"
+
+#include "DataFormats/TrackReco/interface/Track.h"
+#include "DataFormats/TrackReco/interface/TrackFwd.h"
+#include "DataFormats/TrackReco/interface/TrackBase.h"
+#include "DataFormats/VertexReco/interface/Vertex.h"
+#include "DataFormats/VertexReco/interface/VertexFwd.h"
+
+#include "DataFormats/ParticleFlowCandidate/interface/PFCandidate.h"
+#include "DataFormats/ParticleFlowCandidate/interface/PFCandidateFwd.h"
+#include "DataFormats/ParticleFlowReco/interface/PFDisplacedVertex.h"
+#include "DataFormats/ParticleFlowReco/interface/PFDisplacedVertexFwd.h"
+#include "DataFormats/EgammaCandidates/interface/Conversion.h"
+#include "DataFormats/EgammaCandidates/interface/ConversionFwd.h"
+#include "DataFormats/Candidate/interface/VertexCompositeCandidate.h"
+#include "DataFormats/Candidate/interface/VertexCompositeCandidateFwd.h"
 
 
 //
 // class declaration
 //
 
-class PFCand_AssoMap : public edm::EDProducer, public PFCand_AssoMapAlgos {
+class PFCand_AssoMap : public edm::EDProducer {
    public:
       explicit PFCand_AssoMap(const edm::ParameterSet&);
       ~PFCand_AssoMap();
@@ -46,9 +70,26 @@ class PFCand_AssoMap : public edm::EDProducer, public PFCand_AssoMapAlgos {
 
       // ----------member data ---------------------------
 
-      edm::InputTag input_AssociationType_;
-
       edm::InputTag input_PFCandidates_;
+      edm::InputTag input_VertexCollection_;
+
+      edm::InputTag ConversionsCollection_;
+
+      edm::InputTag KshortCollection_;
+      edm::InputTag LambdaCollection_;
+
+      edm::InputTag NIVertexCollection_;
+
+      bool UseBeamSpotCompatibility_;
+      edm::InputTag input_BeamSpot_;
+
+      bool input_VertexAssClosest_;
+
+      int maxNumWarnings_; // CV: print Warning if TrackExtra objects don't exist in input file,
+                           //     but only a few times
+      int numWarnings_;
+
+      bool ignoremissingpfcollection_;
 };
 
 

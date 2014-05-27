@@ -1,0 +1,13 @@
+/DistortedMETProducer.cc/1.4/Tue Jul 20 02:58:29 2010//TV00-04-01
+/DistortedMuonProducer.cc/1.9/Thu Jan 12 15:47:32 2012//TV00-04-01
+/DistortedMuonProducerFromDB.cc/1.3/Tue Jul 20 02:58:29 2010//TV00-04-01
+/DistortedPFCandProducer.cc/1.3/Thu Jan 12 15:47:32 2012//TV00-04-01
+/FSRWeightProducer.cc/1.12/Thu Jun 10 16:13:03 2010//TV00-04-01
+/ISRGammaWeightProducer.cc/1.3/Thu Jun 10 16:13:03 2010//TV00-04-01
+/ISRWeightProducer.cc/1.4/Thu Jun 10 16:13:03 2010//TV00-04-01
+/MuonWithPFIsoProducer.cc/1.3/Wed Oct  6 14:13:10 2010//TV00-04-01
+/PdfSystematicsAnalyzer.cc/1.15/Mon Dec  6 20:42:45 2010//TV00-04-01
+/PdfWeightProducer.cc/1.8/Sun Jun 13 16:30:03 2010//TV00-04-01
+/SimpleSystematicsAnalyzer.cc/1.11/Mon Dec  6 20:40:53 2010//TV00-04-01
+/WeakEffectsWeightProducer.cc/1.2/Sat Feb 20 20:59:17 2010//TV00-04-01
+D

@@ -28,58 +28,55 @@
 
 class SubjetFilterAlgorithm
 {
-  //
-  // construction / destruction
-  //
-public:
-  SubjetFilterAlgorithm(const std::string& moduleLabel,
-			const std::string& jetAlgorithm,
-			unsigned nFatMax,      double rParam,
-			double   rFilt,        double jetPtMin,
-			double   massDropCut,  double asymmCut,
-			bool     asymmCutLater,bool   doAreaFastjet,
-			double   ghostEtaMax,  int    activeAreaRepeats,
-			double   ghostArea,    bool   verbose);
-  virtual ~SubjetFilterAlgorithm();
-  
-  
-  //
-  // member functions
-  //
-public:
-  void run(const std::vector<fastjet::PseudoJet>& inputs, 
-	   std::vector<CompoundPseudoJet>& fatJets,
-	   const edm::EventSetup& iSetup);
-  
-  std::string summary() const;
-  
-  
-  //
-  // member data
-  //
-private:
-  std::string              moduleLabel_;
-  std::string              jetAlgorithm_;
-  unsigned                 nFatMax_;
-  double                   rParam_;
-  double                   rFilt_;
-  double                   jetPtMin_;
-  double                   massDropCut_;
-  double                   asymmCut2_;
-  bool                     asymmCutLater_;
-  bool                     doAreaFastjet_;
-  double                   ghostEtaMax_;
-  int                      activeAreaRepeats_;
-  double                   ghostArea_;
-  bool                     verbose_;
-  
-  unsigned                 nevents_;
-  unsigned                 ntotal_;
-  unsigned                 nfound_;
-  
-  fastjet::JetDefinition*  fjJetDef_;
-  fastjet::AreaDefinition* fjAreaDef_;
+	//
+	// construction / destruction
+	//
+	public:
+		SubjetFilterAlgorithm(const std::string& moduleLabel = '\0',
+							bool verbose = false,
+							bool doAreaFastjet = false,
+							double rParam = 1.2,
+							unsigned nFatMax = 0,
+							double jetPtMin = 10.,
+							double centralEtaCut = 2.5,
+							double massDropCut = 0.67,
+							double rFilt = 0.3,
+							double asymmCut = 0.3,
+							bool asymmCutLater = true);
+							
+		virtual ~SubjetFilterAlgorithm();
 
+
+	//
+	// member functions
+	//
+	public:
+		void run(const std::vector<fastjet::PseudoJet> & inputs, 
+		std::vector<CompoundPseudoJet> & fatJets,
+		boost::shared_ptr<fastjet::ClusterSequence> & fjClusterSeq);
+		
+		std::string summary() const;
+
+
+	//
+	// member data
+	//
+	private:
+		std::string              	moduleLabel_;
+		bool                     	verbose_;
+		bool                     	doAreaFastjet_;		
+		double                   	rParam_;
+		unsigned                 	nFatMax_;
+		double                   	jetPtMin_;
+		double 						centralEtaCut_;
+		double                   	massDropCut_;
+		double						rFilt_;
+		double                   	asymmCut2_;
+		bool                     	asymmCutLater_;
+
+		unsigned                 	nevents_;
+		unsigned                 	ntotal_;
+		unsigned                 	nfound_;
 };
 
 
