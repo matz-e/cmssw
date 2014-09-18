@@ -180,6 +180,8 @@ void CaloTPGTranscoderULUT::loadHCALUncompress() const {
    }
 
    for (int ieta = -32; ieta <= 32; ++ieta){
+      if (ieta == 0)
+         continue;
 
       double eta_low = 0., eta_high = 0.;
 		theTrigTowerGeometry->towerEtaBounds(ieta,eta_low,eta_high); 
