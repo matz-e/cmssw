@@ -356,7 +356,6 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
 void HcaluLUTTPGCoder::adc2Linear(const HBHEDataFrame& df, IntegerCaloSamples& ics) const {
    int lutId = getLUTId(df.id());
    const Lut& lut = inputLUT_.at(lutId);
-   std::cout << "LUT " << lut.size() << std::endl;
    for (int i=0; i<df.size(); i++){
       ics[i] = (lut.at(df[i].adc()) & OUTPUT_MASK);
    }
@@ -374,8 +373,6 @@ void HcaluLUTTPGCoder::adc2Linear(const HcalUpgradeDataFrame& df, IntegerCaloSam
    int lutId = getLUTId(df.id());
    const Lut& lut = inputLUT_.at(lutId);
    for (int i=0; i<df.size(); i++){
-      std::cout << "ADC " << df[i].adc() << " (" << INPUT_LUT_SIZE << ")"
-         << " -> " << (lut.at(df[i].adc()) & OUTPUT_MASK) << std::endl;
       ics[i] = (lut.at(df[i].adc()) & OUTPUT_MASK);
    }
 }
