@@ -49,7 +49,8 @@ public:
   // Constant
   // TODO prefix k
   static const int NOUTLUTS = 4176;
-  static const unsigned int OUTPUT_LUT_SIZE = 1024;
+  // static const unsigned int OUTPUT_LUT_SIZE = 1024;
+  static const unsigned int OUTPUT_LUT_SIZE = 0x40000;
   static const int TPGMAX = 256;
   static const bool newHFphi = true;
 

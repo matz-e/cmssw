@@ -33,7 +33,7 @@ HcaluLUTTPGCoder::HcaluLUTTPGCoder(bool legacy) :
    max_depth(legacy ? legacy_max_depth : upgrade_max_depth),
    nluts(legacy ? legacy_nluts : upgrade_nluts),
    INPUT_LUT_SIZE(legacy ? legacy_INPUT_LUT_SIZE : upgrade_INPUT_LUT_SIZE),
-   OUTPUT_MASK(0x3FF),
+   OUTPUT_MASK(0xFFFF),
    inputLUT_(nluts, Lut(INPUT_LUT_SIZE, 0)),
    gain_(nluts, 0.), ped_ (nluts, 0.){
 }
