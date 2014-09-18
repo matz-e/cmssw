@@ -72,6 +72,7 @@ public:
   uint32_t PMT_NoiseThreshold_; 
 
   bool upgrade_;
+  const unsigned int sample_mask_;
 
   // Algo1: isPeak = TS[i-1] < TS[i] && TS[i] >= TS[i+1]
   // Algo2: isPeak = TSS[i-1] < TSS[i] && TSS[i] >= TSS[i+1],

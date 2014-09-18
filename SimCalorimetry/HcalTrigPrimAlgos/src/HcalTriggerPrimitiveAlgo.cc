@@ -29,6 +29,7 @@ HcalTriggerPrimitiveAlgo::HcalTriggerPrimitiveAlgo( bool pf, const std::vector<d
                                                    minSignalThreshold_(minSignalThreshold),
                                                    PMT_NoiseThreshold_(PMT_NoiseThreshold),
                                                    upgrade_(upgrade),
+                                                   sample_mask_(upgrade ? 0xFFFF : 0x3FF),
                                                    peak_finder_algorithm_(2)
 {
    //No peak finding setting (for Fastsim)
@@ -303,21 +304,21 @@ void HcalTriggerPrimitiveAlgo::analyze(IntegerCaloSamples & samples, HcalTrigger
          }
 
          if (isPeak){
-            output[ibin] = std::min<unsigned int>(sum[idx],0x3FF);
+            output[ibin] = std::min<unsigned int>(sum[idx], sample_mask_);
             finegrain[ibin] = msb[idx];
          }
          // Not a peak
          else output[ibin] = 0;
       }
       else { // No peak finding, just output running sum
-         output[ibin] = std::min<unsigned int>(sum[idx],0x3FF);
+         output[ibin] = std::min<unsigned int>(sum[idx], sample_mask_);
          finegrain[ibin] = msb[idx];
       }
 
       // Only Pegged for 1-TS algo.
       if (peak_finder_algorithm_ == 1) {
-         if (samples[idx] >= 0x3FF)
-            output[ibin] = 0x3FF;
+         if (samples[idx] >= sample_mask_)
+            output[ibin] = sample_mask_;
       }
       outcoder_->compress(output, finegrain, result);
    }
@@ -369,7 +370,7 @@ void HcalTriggerPrimitiveAlgo::analyzeHF(IntegerCaloSamples & samples, HcalTrigg
    for (int ibin = 0; ibin < numberOfSamples_; ++ibin) {
       int idx = ibin + shift;
       output[ibin] = samples[idx] / (rctlsb == 0.25 ? 4 : 8);
-      if (output[ibin] > 0x3FF) output[ibin] = 0x3FF;
+      if (output[ibin] > sample_mask_) output[ibin] = sample_mask_;
    }
    outcoder_->compress(output, finegrain, result);
 }
