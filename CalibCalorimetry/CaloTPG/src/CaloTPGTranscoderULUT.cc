@@ -39,7 +39,7 @@ void CaloTPGTranscoderULUT::loadHCALCompress() const{
 
   // Compute compression LUT
   for (unsigned int i=0; i < OUTPUT_LUT_SIZE; i++) {
-	analyticalLUT[i] = (unsigned int)(sqrt(14.94*log(1.+i/14.94)*i) + 0.5);
+	analyticalLUT[i] = (unsigned int)(sqrt(14.94*log(1.+i/14.94/64.0)*i/64.0) + 0.5);
 	identityLUT[i] = min(i,0xffu);
   }
  
