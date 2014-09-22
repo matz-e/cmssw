@@ -250,6 +250,7 @@ void HcalTriggerPrimitiveAlgo::analyze(IntegerCaloSamples & samples, HcalTrigger
 
    // Align digis and TP
    int shift = samples.presamples() - numberOfPresamples_;
+   if (samples.presamples() == 12) shift = 4 - numberOfPresamples_;
    if (peakfind_) {
       assert (shift >= (peakfind_ ? shrink : 0));
       assert(shift + numberOfSamples_ + shrink <= samples.size() - (peak_finder_algorithm_ - 1));
