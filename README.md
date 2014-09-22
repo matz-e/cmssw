@@ -1,11 +1,22 @@
-cmssw
-=====
+# Getting the code
 
-CMS Offline Software
+Get the right CMSSW release:
 
+    cmsrel CMSSW_6_2_0_SLHC18
+    cd CMSSW_6_2_0_SLHC18/src
+    cmsenv
 
-CondTools/Ecal/python : Alignment : pb with EcalTrivialAlignment_cfi.py
-+ copyFileAlignEB_cfg.py and copyFileAlignEE_cfg.py
+Get the topic from github:
 
+    git cms-merge-topic matz-e:l1hcal
+    scram b -j 8
 
-CalibCaorimetry/EcalTrivialCondModules/data : myEBAlignment_2011.txt and myEEAlignment_2011.txt
+**This branch being periodically rebased and forcefully updated.**
+
+# Running it
+
+This will most likely fail at the end, but the HCAL TP algo runs through
+without any issues.  Verification of TP energies still to be done:
+
+    cd SimCalorimetry/HcalTrigPrimAlgos/test
+    cmsRun run_algo.py
