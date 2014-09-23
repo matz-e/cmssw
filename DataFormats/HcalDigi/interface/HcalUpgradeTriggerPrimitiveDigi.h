@@ -29,7 +29,7 @@ class HcalUpgradeTriggerPrimitiveDigi {
   // Set information.  MAXSAMPLES sets size limit.
   //------------------------------------------------------
 
-  void setDepthData ( std::vector<double> d ) { m_depth_data = d; };
+  void setDepthData ( std::vector<int> d ) { m_depth_data = d; };
   void setSize      ( int  size );
   void setPresamples( int  presamples );
   void setZSInfo    ( bool unsuppressed, bool markAndPass);
@@ -66,7 +66,7 @@ class HcalUpgradeTriggerPrimitiveDigi {
   int SOI_fineGrain      () const { return t0().fineGrain      (); }
   int SOI_compressedEt   () const { return t0().compressedEt   (); }
 
-  double SOI_depth_linear(int i) const { return m_depth_data[i]; }
+  int SOI_depth_linear(int i) const { return m_depth_data[i]; }
   
  private:
   
@@ -75,7 +75,7 @@ class HcalUpgradeTriggerPrimitiveDigi {
   int m_hcalPresamples;
   HcalUpgradeTriggerPrimitiveSample m_data [MAXSAMPLES];
 
-  std::vector<double> m_depth_data;
+  std::vector<int> m_depth_data;
 
 };
 

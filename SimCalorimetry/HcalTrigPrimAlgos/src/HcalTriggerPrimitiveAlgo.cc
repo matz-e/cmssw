@@ -192,7 +192,6 @@ void HcalTriggerPrimitiveAlgo::addSignal(const HcalUpgradeDataFrame& frame) {
       std::vector<bool> msb;
       incoder_->lookupMSB(frame, msb);
 
-
       if (ids.size() == 2) {
          IntegerCaloSamples samples2(ids[1], samples1.size());
          for (int i = 0; i < samples1.size(); ++i) {
@@ -329,6 +328,8 @@ void HcalTriggerPrimitiveAlgo::analyze(IntegerCaloSamples & samples, HcalUpgrade
       }
       outcoder_->compress(output, finegrain, result);
    }
+
+   result.setDepthData(depth_sums);
 }
 
 
