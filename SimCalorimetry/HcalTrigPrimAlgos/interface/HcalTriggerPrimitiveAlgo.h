@@ -153,7 +153,6 @@ void HcalTriggerPrimitiveAlgo::run(const HcalTPGCoder* incoder,
       }
    }
 
-   std::cout << "TPALGO DONE" << std::endl;
    return;
 }
 
