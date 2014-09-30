@@ -48,7 +48,7 @@ public:
   void addSignal(const HBHEDataFrame & frame);
   void addSignal(const HFDataFrame & frame);
   void addSignal(const HcalUpgradeDataFrame& frame);
-  void addSignal(const IntegerCaloSamples & samples);
+  void addSignal(const IntegerCaloSamples & samples, int depth=0);
   void addFG(const HcalTrigTowerDetId& id, std::vector<bool>& msb);
 
   /// adds the actual RecHits
@@ -87,6 +87,9 @@ public:
 
   typedef std::map<HcalTrigTowerDetId, IntegerCaloSamples> SumMap;
   SumMap theSumMap;  
+
+  typedef std::map<HcalTrigTowerDetId, std::vector<IntegerCaloSamples>> DepthMap;
+  DepthMap theDepthMap;
   
   typedef std::vector<IntegerCaloSamples> SumFGContainer;
   typedef std::map< HcalTrigTowerDetId, SumFGContainer > TowerMapFGSum;

@@ -129,6 +129,7 @@ void HcalTriggerPrimitiveAlgo::addSignal(const HFDataFrame & frame) {
 
 
 void HcalTriggerPrimitiveAlgo::addSignal(const HcalUpgradeDataFrame& frame) {
+   int depth = HcalDetId(frame.id()).depth();
    auto ids = theTrigTowerGeometry->towerIds(frame.id());
 
    if (ids.size() > 0 && ids[0].ietaAbs() >= theTrigTowerGeometry->firstHFTower()) {
@@ -143,7 +144,7 @@ void HcalTriggerPrimitiveAlgo::addSignal(const HcalUpgradeDataFrame& frame) {
          // HF PMT veto sum is calculated in analyzerHF()
          IntegerCaloSamples zero_samples(ids[0], frame.size());
          zero_samples.setPresamples(frame.presamples());
-         addSignal(zero_samples);
+         addSignal(zero_samples, depth);
 
          // Mask off depths: fgid is the same for both depths
          uint32_t fgid = (frame.id().rawId() | 0x1c000) ;
@@ -201,27 +202,35 @@ void HcalTriggerPrimitiveAlgo::addSignal(const HcalUpgradeDataFrame& frame) {
             samples2[i] = samples1[i];
          }
          samples2.setPresamples(frame.presamples());
-         addSignal(samples2);
+         addSignal(samples2, depth);
          addFG(ids[1], msb);
       }
 
-      addSignal(samples1);
+      addSignal(samples1, depth);
       addFG(ids[0], msb);
    }
 }
 
 
-void HcalTriggerPrimitiveAlgo::addSignal(const IntegerCaloSamples & samples) {
+void HcalTriggerPrimitiveAlgo::addSignal(const IntegerCaloSamples & samples, int depth) {
    HcalTrigTowerDetId id(samples.id());
    SumMap::iterator itr = theSumMap.find(id);
    if(itr == theSumMap.end()) {
       theSumMap.insert(std::make_pair(id, samples));
+      theDepthMap.insert(std::make_pair(id, std::vector<IntegerCaloSamples>(5)));
    }
    else {
       // wish CaloSamples had a +=
       for(int i = 0; i < samples.size(); ++i) {
          (itr->second)[i] += samples[i];
       }
+   }
+
+   if (theDepthMap[id][depth].size() == 0) {
+      theDepthMap[id][depth] = samples;
+   } else {
+      for (int i = 0; i < samples.size(); ++i)
+         theDepthMap[id][depth][i] += samples[i];
    }
 }
 
@@ -247,6 +256,8 @@ void HcalTriggerPrimitiveAlgo::analyze(IntegerCaloSamples & samples, HcalTrigger
 
    IntegerCaloSamples output(samples.id(), numberOfSamples_);
    output.setPresamples(numberOfPresamples_);
+
+   std::vector<int> depth_sums(5, 0);
 
    // Align digis and TP
    int shift = samples.presamples() - numberOfPresamples_;
@@ -279,13 +290,34 @@ void HcalTriggerPrimitiveAlgo::analyze(IntegerCaloSamples & samples, HcalTrigger
          if (isPeak){
             output[ibin] = std::min<unsigned int>(sum[idx], sample_mask_);
             finegrain[ibin] = msb[idx];
+            // Only provide depth information for the SOI.  This is the
+            // energy value used downstream, even if the peak is found for
+            // another sample.
+            if (ibin == numberOfPresamples_) {
+               for (int d = 0; d < 5; ++d) {
+                  auto algosumvalue = 0;
+                  for (unsigned int i = 0; i < weights_.size(); ++i)
+                     algosumvalue += int(theDepthMap[samples.id()][d][idx + i] * weights_[i]);
+                  depth_sums[d] += std::min<unsigned int>(algosumvalue, sample_mask_);
+               }
+            }
+         } else {
+            output[ibin] = 0;
          }
-         // Not a peak
-         else output[ibin] = 0;
       }
       else { // No peak finding, just output running sum
          output[ibin] = std::min<unsigned int>(sum[idx], sample_mask_);
          finegrain[ibin] = msb[idx];
+
+         // See comment above.
+         if (ibin == numberOfPresamples_) {
+            for (int d = 0; d < 5; ++d) {
+               auto algosumvalue = 0;
+               for (unsigned int i = 0; i < weights_.size(); ++i)
+                  algosumvalue += int(theDepthMap[samples.id()][d][idx + i] * weights_[i]);
+               depth_sums[d] += std::min<unsigned int>(algosumvalue, sample_mask_);
+            }
+         }
       }
 
       // Only Pegged for 1-TS algo.
