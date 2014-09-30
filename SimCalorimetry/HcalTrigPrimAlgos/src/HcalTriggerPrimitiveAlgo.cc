@@ -339,22 +339,20 @@ void HcalTriggerPrimitiveAlgo::analyzeHF(IntegerCaloSamples & samples, HcalTrigg
    assert(shift >=  0);
    assert((shift + numberOfSamples_) <=  samples.size());
 
-   if (!upgrade_) {
-      TowerMapFGSum::const_iterator tower2fg = theTowerMapFGSum.find(detId);
-      assert(tower2fg != theTowerMapFGSum.end());
+   TowerMapFGSum::const_iterator tower2fg = theTowerMapFGSum.find(detId);
+   assert(tower2fg != theTowerMapFGSum.end());
 
-      const SumFGContainer& sumFG = tower2fg->second;
-      // Loop over all L+S pairs that mapped from samples.id()
-      // Note: 1 samples.id() = 6 x (L+S) without noZS
-      for (SumFGContainer::const_iterator sumFGItr = sumFG.begin(); sumFGItr != sumFG.end(); ++sumFGItr) {
-         const std::vector<bool>& veto = HF_Veto[sumFGItr->id().rawId()];
-         for (int ibin = 0; ibin < numberOfSamples_; ++ibin) {
-            int idx = ibin + shift;
-            // if not vetod, add L+S to total sum and calculate FG
-            if (!(veto[idx] && (*sumFGItr)[idx] > PMT_NoiseThreshold_)) {
-               samples[idx] += (*sumFGItr)[idx];
-               finegrain[ibin] = (finegrain[ibin] || (*sumFGItr)[idx] >= FG_threshold_);
-            }
+   const SumFGContainer& sumFG = tower2fg->second;
+   // Loop over all L+S pairs that mapped from samples.id()
+   // Note: 1 samples.id() = 6 x (L+S) without noZS
+   for (SumFGContainer::const_iterator sumFGItr = sumFG.begin(); sumFGItr != sumFG.end(); ++sumFGItr) {
+      const std::vector<bool>& veto = HF_Veto[sumFGItr->id().rawId()];
+      for (int ibin = 0; ibin < numberOfSamples_; ++ibin) {
+         int idx = ibin + shift;
+         // if not vetod, add L+S to total sum and calculate FG
+         if (!(veto[idx] && (*sumFGItr)[idx] > PMT_NoiseThreshold_)) {
+            samples[idx] += (*sumFGItr)[idx];
+            finegrain[ibin] = (finegrain[ibin] || (*sumFGItr)[idx] >= FG_threshold_);
          }
       }
    }
