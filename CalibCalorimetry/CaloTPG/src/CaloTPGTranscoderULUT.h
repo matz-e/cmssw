@@ -25,6 +25,7 @@ public:
                         bool upgrade=false);
   virtual ~CaloTPGTranscoderULUT();
   virtual HcalTriggerPrimitiveSample hcalCompress(const HcalTrigTowerDetId& id, unsigned int sample, bool fineGrain) const;
+  virtual HcalUpgradeTriggerPrimitiveSample hcalUpgradeCompress(const HcalTrigTowerDetId& id, unsigned int sample, bool fineGrain) const;
   virtual EcalTriggerPrimitiveSample ecalCompress(const EcalTrigTowerDetId& id, unsigned int sample, bool fineGrain) const;
 
   virtual void rctEGammaUncompress(const HcalTrigTowerDetId& hid, const HcalTriggerPrimitiveSample& hc,
