@@ -270,6 +270,22 @@ HcalTriggerPrimitiveSample CaloTPGTranscoderULUT::hcalCompress(const HcalTrigTow
   return HcalTriggerPrimitiveSample(outputLUT_[itower][sample],fineGrain,0,0);
 }
 
+HcalUpgradeTriggerPrimitiveSample
+CaloTPGTranscoderULUT::hcalUpgradeCompress(const HcalTrigTowerDetId& id, unsigned int sample, bool fineGrain) const {
+  int ieta = id.ieta();
+  int iphi = id.iphi();
+  int itower = getOutputLUTId(ieta,iphi);
+
+  if (itower < 0) cms::Exception("Invalid Data") << "No trigger tower found for ieta, iphi = " << ieta << ", " << iphi;
+  if (sample >= OUTPUT_LUT_SIZE) {
+
+    throw cms::Exception("Out of Range") << "LUT has 1024 entries for " << itower << " but " << sample << " was requested.";
+    sample=OUTPUT_LUT_SIZE - 1;
+  }
+
+  return HcalUpgradeTriggerPrimitiveSample(outputLUT_[itower][sample],fineGrain,0,0);
+}
+
 double CaloTPGTranscoderULUT::hcaletValue(const int& ieta, const int& iphi, const int& compET) const {
   if (hcaluncomp_.empty()) {
 
