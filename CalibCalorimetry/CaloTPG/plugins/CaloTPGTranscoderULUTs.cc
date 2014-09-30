@@ -63,6 +63,8 @@ private:
   std::vector<int> LUTfactor;
   double nominal_gain;
   double RCTLSB;
+
+  bool upgrade_;
 };
 
 //
@@ -78,7 +80,8 @@ private:
 //
 CaloTPGTranscoderULUTs::CaloTPGTranscoderULUTs(const edm::ParameterSet& iConfig) :
   hfilename1_(iConfig.getParameter<edm::FileInPath>("hcalLUT1")),
-  hfilename2_(iConfig.getParameter<edm::FileInPath>("hcalLUT2"))
+  hfilename2_(iConfig.getParameter<edm::FileInPath>("hcalLUT2")),
+  upgrade_(iConfig.getParameter<bool>("upgrade"))
 {
    //the following line is needed to tell the framework what
    // data is being produced
@@ -147,7 +150,7 @@ CaloTPGTranscoderULUTs::produce(const CaloTPGRecord& iRecord)
 	 //return pTCoder;
    }
    //std::auto_ptr<CaloTPGTranscoder> pTCoder(new CaloTPGTranscoderULUT(ietal, ietah, ZS, LUTfactor, RCTLSB, nominal_gain, file1, file2));
-   std::auto_ptr<CaloTPGTranscoder> pTCoder(new CaloTPGTranscoderULUT(file1, file2));
+   std::auto_ptr<CaloTPGTranscoder> pTCoder(new CaloTPGTranscoderULUT(file1, file2, upgrade_));
    return pTCoder;
 }
 
