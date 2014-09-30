@@ -15,10 +15,13 @@ using namespace std;
 
 
 CaloTPGTranscoderULUT::CaloTPGTranscoderULUT(const std::string& compressionFile,
-                                             const std::string& decompressionFile)
+                                             const std::string& decompressionFile,
+                                             bool upgrade)
                                                 : isLoaded_(false), nominal_gain_(0.), rctlsb_factor_(0.),
                                                   compressionFile_(compressionFile),
-                                                  decompressionFile_(decompressionFile)
+                                                  decompressionFile_(decompressionFile),
+                                                  upgrade_(upgrade),
+                                                  OUTPUT_LUT_SIZE(upgrade ? 0x1000 : 0x40000)
 {
   for (int i = 0; i < NOUTLUTS; i++) outputLUT_[i] = 0;
 }
@@ -39,8 +42,11 @@ void CaloTPGTranscoderULUT::loadHCALCompress() const{
 
   // Compute compression LUT
   for (unsigned int i=0; i < OUTPUT_LUT_SIZE; i++) {
-	analyticalLUT[i] = (unsigned int)(sqrt(14.94*log(1.+i/14.94/64.0)*i/64.0) + 0.5);
-	identityLUT[i] = min(i,0xffu);
+    if (upgrade_)
+      analyticalLUT[i] = (unsigned int)(sqrt(14.94*log(1.+i/14.94/64.0)*i/64.0) + 0.5);
+    else
+      analyticalLUT[i] = (unsigned int)(sqrt(14.94*log(1.+i/14.94)*i) + 0.5);
+    identityLUT[i] = min(i,0xffu);
   }
  
   for (int ieta=-32; ieta <= 32; ieta++){
