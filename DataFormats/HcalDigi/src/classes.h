@@ -23,6 +23,7 @@ namespace {
     edm::SortedCollection<HFDataFrame> vHF_;
     edm::SortedCollection<HcalCalibDataFrame> vHC_;
     edm::SortedCollection<HcalTriggerPrimitiveDigi> vHTP_;
+    edm::SortedCollection<HcalUpgradeTriggerPrimitiveDigi> vHUTP_;
     edm::SortedCollection<HcalHistogramDigi> vHH_;
     edm::SortedCollection<HcalTTPDigi> vTTP_;
     edm::SortedCollection<HcalUpgradeDataFrame> vU_;
@@ -32,6 +33,7 @@ namespace {
     HFDigiCollection theHF_;
     HcalCalibDigiCollection theHC_;
     HcalTrigPrimDigiCollection theHTP_;
+    HcalUpgradeTrigPrimDigiCollection theHUTP_;
     HcalHistogramDigiCollection theHH_;
     ZDCDigiCollection theZDC_;
     HBHEUpgradeDigiCollection theUHBHE_;
@@ -53,6 +55,7 @@ namespace {
     edm::Wrapper<edm::SortedCollection<HOTriggerPrimitiveDigi> > anotherHOTP_;
     edm::Wrapper<edm::SortedCollection<HcalTTPDigi> > anotherTTP_;
     edm::Wrapper<edm::SortedCollection<HcalUpgradeDataFrame> > anotherUG_;
+    edm::Wrapper<edm::SortedCollection<HcalUpgradeTriggerPrimitiveDigi> > anotherUGTP_;
 
     edm::Wrapper<HBHEDigiCollection> theHBHEw_;
     edm::Wrapper<HODigiCollection> theHOw_;
@@ -66,6 +69,7 @@ namespace {
     edm::Wrapper<HcalTTPDigiCollection> theTTPw_;
     edm::Wrapper<HBHEUpgradeDigiCollection> theUHBHEw_;
     edm::Wrapper<HFUpgradeDigiCollection> theUHFw_;
+    edm::Wrapper<HcalUpgradeTrigPrimDigiCollection> theHUTPw_; 
   };
 }
 
