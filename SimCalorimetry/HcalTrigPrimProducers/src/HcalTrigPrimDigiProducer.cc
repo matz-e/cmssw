@@ -44,6 +44,7 @@ HcalTrigPrimDigiProducer::HcalTrigPrimDigiProducer(const edm::ParameterSet& ps)
   upgrade_(ps.getParameter<bool>("upgrade"))
 {
    produces<HcalTrigPrimDigiCollection>();
+   produces<HcalUpgradeTrigPrimDigiCollection>();
    theAlgo_.setPeakFinderAlgorithm(ps.getParameter<int>("PeakFinderAlgorithm"));
 }
 
@@ -67,6 +68,7 @@ void HcalTrigPrimDigiProducer::produce(edm::Event& iEvent, const edm::EventSetup
   
   // Step B: Create empty output
   std::auto_ptr<HcalTrigPrimDigiCollection> result(new HcalTrigPrimDigiCollection());
+  std::auto_ptr<HcalUpgradeTrigPrimDigiCollection> up_result(new HcalUpgradeTrigPrimDigiCollection());
 
   edm::Handle<HBHEDigiCollection> hbheDigis;
   edm::Handle<HFDigiCollection>   hfDigis;
@@ -117,7 +119,7 @@ void HcalTrigPrimDigiProducer::produce(edm::Event& iEvent, const edm::EventSetup
   // Step C: Invoke the algorithm, passing in inputs and getting back outputs.
   if (upgrade_) {
     theAlgo_.run(inputCoder.product(),outTranscoder->getHcalCompressor().get(), outTranscoder.product(),
-             *hbheUpDigis,  *hfUpDigis, *result, &(*pG), rctlsb);
+             *hbheUpDigis,  *hfUpDigis, *up_result, &(*pG), rctlsb);
   } else {
     theAlgo_.run(inputCoder.product(),outTranscoder->getHcalCompressor().get(), outTranscoder.product(),
              *hbheDigis,  *hfDigis, *result, &(*pG), rctlsb);
@@ -161,6 +163,7 @@ void HcalTrigPrimDigiProducer::produce(edm::Event& iEvent, const edm::EventSetup
 
   // Step D: Put outputs into event
   iEvent.put(result);
+  iEvent.put(up_result);
 
   outTranscoder->releaseSetup();
 }
