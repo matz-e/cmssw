@@ -90,9 +90,9 @@ process.poke = cms.Path()
 
 # Schedule definition
 # process.schedule = cms.Schedule(process.digitisation_step,process.L1simulation_step,process.digi2raw_step,process.endjob_step,process.FEVTDEBUGHLToutput_step)
-process.simpledigi = cms.Path(process.simHcalTriggerPrimitiveDigis)
-# process.simpledigi = process.digitisation_step
-process.schedule = cms.Schedule(process.simpledigi,process.poke,process.endjob_step,process.FEVTDEBUGHLToutput_step)
+# process.simpledigi = cms.Path(process.simHcalTriggerPrimitiveDigis)
+# process.schedule = cms.Schedule(process.simpledigi,process.poke,process.endjob_step,process.FEVTDEBUGHLToutput_step)
+process.schedule = cms.Schedule(process.digitisation_step,process.poke,process.endjob_step,process.FEVTDEBUGHLToutput_step)
 # process.schedule = cms.Schedule(process.simpledigi,process.endjob_step,process.FEVTDEBUGHLToutput_step)
 
 # customisation of the process.
