@@ -27,10 +27,12 @@ process.maxEvents = cms.untracked.PSet(
 
 # Input source
 process.source = cms.Source("PoolSource",
-    # secondaryFileNames = cms.untracked.vstring(
-    # )
-    # fileNames = cms.untracked.vstring('/store/relval/CMSSW_6_2_0_SLHC17/RelValTTbar_14TeV/GEN-SIM-DIGI-RAW/DES19_62_V8_UPG2019withGEM-v1/00000/425D5D0B-442D-E411-9801-0025905B860E.root')
-    fileNames = cms.untracked.vstring('/store/relval/CMSSW_6_2_0_SLHC17/RelValTTbar_14TeV/GEN-SIM-DIGI-RAW/DES19_62_V8_UPG2019withGEM-v1/00000/C8305535-4B2D-E411-A8F1-0025905A609E.root')
+    secondaryFileNames = cms.untracked.vstring(
+        '/store/relval/CMSSW_6_2_0_SLHC17/RelValTTbar_14TeV/GEN-SIM-DIGI-RAW/DES19_62_V8_UPG2019withGEM-v1/00000/CE8427B2-472D-E411-AA62-0025905964C4.root',
+        '/store/relval/CMSSW_6_2_0_SLHC17/RelValTTbar_14TeV/GEN-SIM-DIGI-RAW/DES19_62_V8_UPG2019withGEM-v1/00000/D4798386-442D-E411-9462-0025905A48FC.root'
+    ),
+    fileNames = cms.untracked.vstring('/store/relval/CMSSW_6_2_0_SLHC17/RelValTTbar_14TeV/GEN-SIM-RECO/DES19_62_V8_UPG2019withGEM-v1/00000/108122F4-532D-E411-AEC2-0025905A60F2.root')
+    # fileNames = cms.untracked.vstring('/store/relval/CMSSW_6_2_0_SLHC17/RelValTTbar_14TeV/GEN-SIM-DIGI-RAW/DES19_62_V8_UPG2019withGEM-v1/00000/C8305535-4B2D-E411-A8F1-0025905A609E.root')
     # fileNames = cms.untracked.vstring('file:merged.root')
 )
 
@@ -73,20 +75,25 @@ process.endjob_step = cms.EndPath(process.endOfProcess)
 process.FEVTDEBUGHLToutput_step = cms.EndPath(process.FEVTDEBUGHLToutput)
 
 # process.chainplotter = cms.EDAnalyzer("HcalCompareChains",
-#         TriggerPrimitives = cms.InputTag('simHcalTriggerPrimitiveDigis'),
+#         TriggerPrimitives = cms.InputTag('simHcalTriggerPrimitiveDigis', '', 'TPPROD'),
 #         RecHits = cms.InputTag('hbheUpgradeReco'))
 
-# process.cmp = cms.Path(process.chainplotter) # for plots
+# process.mapping = cms.EDAnalyzer("HcalMapping")
+
+# process.poke = cms.Path(process.chainplotter) # for plots
+# process.poke = cms.Path(process.mapping)
+process.poke = cms.Path()
 
 # process.TFileService = cms.Service("TFileService",
 #         closeFileFast = cms.untracked.bool(True),
-#         fileName = cms.string("test.root"))
+#         fileName = cms.string("debug.root"))
 
 # Schedule definition
 # process.schedule = cms.Schedule(process.digitisation_step,process.L1simulation_step,process.digi2raw_step,process.endjob_step,process.FEVTDEBUGHLToutput_step)
 process.simpledigi = cms.Path(process.simHcalTriggerPrimitiveDigis)
-# process.schedule = cms.Schedule(process.simpledigi, process.cmp)
-process.schedule = cms.Schedule(process.simpledigi,process.endjob_step,process.FEVTDEBUGHLToutput_step)
+# process.simpledigi = process.digitisation_step
+process.schedule = cms.Schedule(process.simpledigi,process.poke,process.endjob_step,process.FEVTDEBUGHLToutput_step)
+# process.schedule = cms.Schedule(process.simpledigi,process.endjob_step,process.FEVTDEBUGHLToutput_step)
 
 # customisation of the process.
 
