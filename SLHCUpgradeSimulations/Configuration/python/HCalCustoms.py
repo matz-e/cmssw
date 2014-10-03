@@ -135,7 +135,7 @@ def customise_Digi(process):
 
     if hasattr(process,'HcalTPGCoderULUT'):
         process.HcalTPGCoderULUT.upgrade = cms.bool(True)
-        process.CaloTPGTranscoderULUTs.upgrade = cms.bool(True)
+        process.CaloTPGTranscoder.upgrade = cms.bool(True)
 
     if hasattr(process, 'simHcalTriggerPrimitiveDigis'):
         process.simHcalTriggerPrimitiveDigis.upgrade = cms.bool(True)
