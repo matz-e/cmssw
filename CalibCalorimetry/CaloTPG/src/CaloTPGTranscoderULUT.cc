@@ -21,7 +21,7 @@ CaloTPGTranscoderULUT::CaloTPGTranscoderULUT(const std::string& compressionFile,
                                                   compressionFile_(compressionFile),
                                                   decompressionFile_(decompressionFile),
                                                   upgrade_(upgrade),
-                                                  OUTPUT_LUT_SIZE(upgrade ? 0x1000 : 0x40000)
+                                                  OUTPUT_LUT_SIZE(upgrade ? 0x10000 : 0x400)
 {
   for (int i = 0; i < NOUTLUTS; i++) outputLUT_[i] = 0;
 }
@@ -279,7 +279,7 @@ CaloTPGTranscoderULUT::hcalUpgradeCompress(const HcalTrigTowerDetId& id, unsigne
   if (itower < 0) cms::Exception("Invalid Data") << "No trigger tower found for ieta, iphi = " << ieta << ", " << iphi;
   if (sample >= OUTPUT_LUT_SIZE) {
 
-    throw cms::Exception("Out of Range") << "LUT has 1024 entries for " << itower << " but " << sample << " was requested.";
+    throw cms::Exception("Out of Range") << "LUT has " << OUTPUT_LUT_SIZE << " entries for " << itower << " but " << sample << " was requested.";
     sample=OUTPUT_LUT_SIZE - 1;
   }
 
