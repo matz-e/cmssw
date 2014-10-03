@@ -53,7 +53,9 @@ public:
 
   /// adds the actual RecHits
   void analyze(IntegerCaloSamples & samples, HcalTriggerPrimitiveDigi & result);
+  void analyze(IntegerCaloSamples & samples, HcalUpgradeTriggerPrimitiveDigi & result);
   void analyzeHF(IntegerCaloSamples & samples, HcalTriggerPrimitiveDigi & result, float rctlsb);
+  void analyzeHF(IntegerCaloSamples & samples, HcalUpgradeTriggerPrimitiveDigi & result, float rctlsb);
 
    // Member initialized by constructor
   const HcaluLUTTPGCoder* incoder_;
@@ -142,7 +144,7 @@ void HcalTriggerPrimitiveAlgo::run(const HcalTPGCoder* incoder,
    }
 
    for(SumMap::iterator mapItr = theSumMap.begin(); mapItr != theSumMap.end(); ++mapItr) {
-      result.push_back(HcalTriggerPrimitiveDigi(mapItr->first));
+      result.push_back((typename TPColl::value_type)(mapItr->first));
       HcalTrigTowerDetId detId(mapItr->second.id());
       if (detId.ietaAbs() >= theTrigTowerGeometry->firstHFTower()) {
          analyzeHF(mapItr->second, result.back(), rctlsb);
