@@ -134,7 +134,8 @@ void HcalTriggerPrimitiveAlgo::addSignal(const HcalUpgradeDataFrame& frame) {
 
    if (ids.size() > 0 && ids[0].ietaAbs() >= theTrigTowerGeometry->firstHFTower()) {
       // HF
-      if(frame.id().depth() == 1 || frame.id().depth() == 2) {
+      if (true) {
+      /* if(frame.id().depth() == 1 || frame.id().depth() == 2) { */
          assert(ids.size() == 1);
          IntegerCaloSamples samples(ids[0], frame.size());
          samples.setPresamples(frame.presamples());
@@ -152,6 +153,10 @@ void HcalTriggerPrimitiveAlgo::addSignal(const HcalUpgradeDataFrame& frame) {
          if ( theTowerMapFGSum.find(ids[0]) == theTowerMapFGSum.end() ) {
             SumFGContainer sumFG;
             theTowerMapFGSum.insert(std::pair<HcalTrigTowerDetId, SumFGContainer >(ids[0], sumFG));
+
+            // Add a depth level
+            DepthFGMap depthFGmap;
+            theTowerMapFGDepth.insert(std::pair<HcalTrigTowerDetId, DepthFGMap>(ids[0], depthFGmap));
          }
 
          SumFGContainer& sumFG = theTowerMapFGSum[ids[0]];
@@ -170,6 +175,21 @@ void HcalTriggerPrimitiveAlgo::addSignal(const HcalUpgradeDataFrame& frame) {
             for (int i=0; i<samples.size(); ++i) sumFGSamples[i] = samples[i];
             sumFG.push_back(sumFGSamples);
          }
+
+         DepthFGMap& depthFGmap = theTowerMapFGDepth[ids[0]];
+         if (depthFGmap.find(fgid) == depthFGmap.end()) {
+            DepthFGContainer depthFG;
+            depthFGmap.insert(std::make_pair(fgid, depthFG));
+         }
+
+         DepthFGContainer& depthFG = depthFGmap[fgid];
+         if (int(depthFG.size()) < depth + 1)
+            depthFG.resize(depth + 1);
+
+         depthFG[depth] = IntegerCaloSamples(DetId(fgid), samples.size());
+         depthFG[depth].setPresamples(samples.presamples());
+         for (int i = 0; i < samples.size(); ++i)
+            depthFG[depth][i] = samples[i];
 
          // set veto to true if Long or Short less than threshold
          if (HF_Veto.find(fgid) == HF_Veto.end()) {
@@ -362,6 +382,15 @@ void HcalTriggerPrimitiveAlgo::analyzeHF(IntegerCaloSamples & samples, HcalUpgra
       }
    }
 
+   std::vector<int> depth_sums = {0, 0, 0, 0, 0};
+   for (const auto& item: theTowerMapFGDepth[detId]) {
+      // Skip vetoed ids
+      if (HF_Veto[item.first][numberOfPresamples_])
+         continue;
+      for (unsigned int i = 0; i < item.second.size(); ++i)
+         depth_sums[i] += item.second[i][numberOfPresamples_];
+   }
+
    IntegerCaloSamples output(samples.id(), numberOfSamples_);
    output.setPresamples(numberOfPresamples_);
 
@@ -371,6 +400,8 @@ void HcalTriggerPrimitiveAlgo::analyzeHF(IntegerCaloSamples & samples, HcalUpgra
       if (output[ibin] > sample_mask_) output[ibin] = sample_mask_;
    }
    outcoder_->compress(output, finegrain, result);
+
+   result.setDepthData(depth_sums);
 }
 
 void HcalTriggerPrimitiveAlgo::runZS(HcalTrigPrimDigiCollection & result){
