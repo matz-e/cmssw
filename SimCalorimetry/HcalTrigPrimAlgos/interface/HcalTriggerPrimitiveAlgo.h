@@ -97,6 +97,11 @@ public:
   typedef std::map< HcalTrigTowerDetId, SumFGContainer > TowerMapFGSum;
   TowerMapFGSum theTowerMapFGSum;
 
+  typedef std::vector<IntegerCaloSamples> DepthFGContainer;
+  typedef std::map< uint32_t, DepthFGContainer > DepthFGMap;
+  typedef std::map< HcalTrigTowerDetId, DepthFGMap > TowerMapFGDepth;
+  TowerMapFGDepth theTowerMapFGDepth;
+
   // ==============================
   // =  HF Veto
   // ==============================
