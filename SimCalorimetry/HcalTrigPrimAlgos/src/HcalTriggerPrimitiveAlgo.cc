@@ -183,13 +183,16 @@ void HcalTriggerPrimitiveAlgo::addSignal(const HcalUpgradeDataFrame& frame) {
          }
 
          DepthFGContainer& depthFG = depthFGmap[fgid];
-         if (int(depthFG.size()) < depth + 1)
-            depthFG.resize(depth + 1);
+         if (int(depthFG.size()) < depth)
+            depthFG.resize(depth);
 
-         depthFG[depth] = IntegerCaloSamples(DetId(fgid), samples.size());
-         depthFG[depth].setPresamples(samples.presamples());
+         if (depthFG[depth - 1].id().rawId() == 0) {
+            depthFG[depth - 1] = IntegerCaloSamples(DetId(fgid), samples.size());
+            depthFG[depth - 1].setPresamples(samples.presamples());
+         }
+
          for (int i = 0; i < samples.size(); ++i)
-            depthFG[depth][i] = samples[i];
+            depthFG[depth - 1][i] += samples[i];
 
          // set veto to true if Long or Short less than threshold
          if (HF_Veto.find(fgid) == HF_Veto.end()) {
@@ -245,11 +248,12 @@ void HcalTriggerPrimitiveAlgo::addSignal(const IntegerCaloSamples & samples, int
       }
    }
 
-   if (theDepthMap[id][depth].size() == 0) {
-      theDepthMap[id][depth] = samples;
+   // Depth levels start with 1
+   if (theDepthMap[id][depth - 1].size() == 0) {
+      theDepthMap[id][depth - 1] = samples;
    } else {
       for (int i = 0; i < samples.size(); ++i)
-         theDepthMap[id][depth][i] += samples[i];
+         theDepthMap[id][depth - 1][i] += samples[i];
    }
 }
 

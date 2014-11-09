@@ -66,7 +66,7 @@ class HcalUpgradeTriggerPrimitiveDigi {
   int SOI_fineGrain      () const { return t0().fineGrain      (); }
   int SOI_compressedEt   () const { return t0().compressedEt   (); }
 
-  int SOI_depth_linear(int i) const { return m_depth_data[i]; }
+  int SOI_depth_linear(int i) const { return m_depth_data[i - 1]; }
   
  private:
   
