@@ -2,8 +2,8 @@
 
 Get the right CMSSW release:
 
-    cmsrel CMSSW_6_2_0_SLHC19
-    cd CMSSW_6_2_0_SLHC19/src
+    cmsrel CMSSW_6_2_0_SLHC20
+    cd CMSSW_6_2_0_SLHC20/src
     cmsenv
 
 Get the topic from github:
@@ -28,5 +28,5 @@ The TP algo will now produce `HcalUpgradeTriggerPrimitives` found in
     DataFormats/HcalDigi/src/HcalUpgradeTriggerPrimitiveDigi.cc
 
 which have been resurrected from CVS.  Currently, the method
-`SOI_depth_linear` takes a depth level (0 - 4) and returns depth
+`SOI_depth_linear` takes a depth level (1 - 5) and returns depth
 information in linearized ADC counts.
