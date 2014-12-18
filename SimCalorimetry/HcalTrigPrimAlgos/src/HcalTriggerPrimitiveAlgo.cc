@@ -16,6 +16,93 @@
 
 using namespace std;
 
+std::pair<double, double>
+timing(const HcalUpgradeDataFrame& frame) {
+   int n = frame.size();
+   double ft = -999.;
+   double rt = -999.;
+   int sig_bx = frame.presamples();
+   int dir = -1;
+   int step = 1;
+   int i = sig_bx;
+   int nbins = 50;
+
+   while ((i > 2) && (i < frame.size() - 2) && (i < n) && ((rt < -998.) || (ft < 998.))) {
+      unsigned rise = frame.tdc(i) % 100;
+      unsigned fall = frame.tdc(i) / 100;
+
+      if (rt < -998. && rise != 62 && rise != 63) {
+         rt = rise * 25. / nbins + (i - sig_bx) * 25.;
+      }
+      if (((ft < -998.) || (ft < rt)) && 
+            (fall != 62) && (fall != 63)) {
+         ft = fall * 25. / nbins + (i - sig_bx) * 25.;
+      }
+
+      i += dir * step;
+      ++step;
+      dir *= -1;
+   }
+
+   /* if (rt > -998 or ft > -998) */
+   /*    std::cout << "rise " << rt << " fall " << ft << std::endl; */
+
+   return {rt, ft};
+}
+
+void
+update(HcalUpgradeTriggerPrimitiveDigi& digi, const Sample& sample, int soi)
+{
+   std::vector<double> rise_avg;
+   std::vector<double> rise_rms;
+   std::vector<double> fall_avg;
+   std::vector<double> fall_rms;
+   std::vector<int> linearized;
+   std::vector<int> oot;
+
+   for (int i = 0; i < 5; ++i) {
+      auto rise = sample.rise(i);
+      if (rise.size() > 0) {
+         double avg = std::accumulate(rise.begin(), rise.end(), 0.) / rise.size();
+         double sqrs = std::accumulate(rise.begin(), rise.end(), 0., [](double x, double y) { return x + y * y; });
+
+         rise_avg.push_back(avg);
+         rise_rms.push_back(sqrt(sqrs / rise.size() - avg * avg));
+      } else {
+         rise_avg.push_back(-1e6);
+         rise_rms.push_back(-1e6);
+      }
+
+      auto fall = sample.fall(i);
+      if (fall.size() > 0) {
+         double avg = std::accumulate(fall.begin(), fall.end(), 0.) / fall.size();
+         double sqrs = std::accumulate(fall.begin(), fall.end(), 0., [](double x, double y) { return x + y * y; });
+
+         fall_avg.push_back(avg);
+         fall_rms.push_back(sqrt(sqrs / fall.size() - avg * avg));
+      } else {
+         fall_avg.push_back(-1e6);
+         fall_rms.push_back(-1e6);
+      }
+
+      /* std::cout << "rise "; */
+      /* for (const auto& v: rise) */
+      /*    std::cout << v << " "; */
+      /* std::cout << "-> " << rise_avg.back() << std::endl; */
+      /* std::cout << "fall "; */
+      /* for (const auto& v: fall) */
+      /*    std::cout << v << " "; */
+      /* std::cout << "-> " << fall_avg.back() << std::endl; */
+
+      linearized.push_back(sample[i][soi]);
+      oot.push_back(sample(i)[soi]);
+   }
+
+   digi.setDepthData(linearized);
+   digi.setOOTData(oot);
+   digi.setTimingData(rise_avg, rise_rms, fall_avg, fall_rms);
+}
+
 HcalTriggerPrimitiveAlgo::HcalTriggerPrimitiveAlgo( bool pf, const std::vector<double>& w, int latency,
                                                     uint32_t FG_threshold, uint32_t ZS_threshold,
                                                     int numberOfSamples, int numberOfPresamples,
@@ -145,7 +232,7 @@ void HcalTriggerPrimitiveAlgo::addSignal(const HcalUpgradeDataFrame& frame) {
          // HF PMT veto sum is calculated in analyzerHF()
          IntegerCaloSamples zero_samples(ids[0], frame.size());
          zero_samples.setPresamples(frame.presamples());
-         addSignal(zero_samples, depth);
+         addSignal(zero_samples, depth, timing(frame));
 
          // Mask off depths: fgid is the same for both depths
          uint32_t fgid = (frame.id().rawId() | 0x1c000) ;
@@ -178,21 +265,10 @@ void HcalTriggerPrimitiveAlgo::addSignal(const HcalUpgradeDataFrame& frame) {
 
          DepthFGMap& depthFGmap = theTowerMapFGDepth[ids[0]];
          if (depthFGmap.find(fgid) == depthFGmap.end()) {
-            DepthFGContainer depthFG;
-            depthFGmap.insert(std::make_pair(fgid, depthFG));
+            depthFGmap.insert(std::make_pair(fgid, Sample()));
          }
 
-         DepthFGContainer& depthFG = depthFGmap[fgid];
-         if (int(depthFG.size()) < depth)
-            depthFG.resize(depth);
-
-         if (depthFG[depth - 1].id().rawId() == 0) {
-            depthFG[depth - 1] = IntegerCaloSamples(DetId(fgid), samples.size());
-            depthFG[depth - 1].setPresamples(samples.presamples());
-         }
-
-         for (int i = 0; i < samples.size(); ++i)
-            depthFG[depth - 1][i] += samples[i];
+         depthFGmap[fgid].add(depth, samples, timing(frame));
 
          // set veto to true if Long or Short less than threshold
          if (HF_Veto.find(fgid) == HF_Veto.end()) {
@@ -224,22 +300,22 @@ void HcalTriggerPrimitiveAlgo::addSignal(const HcalUpgradeDataFrame& frame) {
             samples2[i] = samples1[i];
          }
          samples2.setPresamples(frame.presamples());
-         addSignal(samples2, depth);
+         addSignal(samples2, depth, timing(frame));
          addFG(ids[1], msb);
       }
 
-      addSignal(samples1, depth);
+      addSignal(samples1, depth, timing(frame));
       addFG(ids[0], msb);
    }
 }
 
 
-void HcalTriggerPrimitiveAlgo::addSignal(const IntegerCaloSamples & samples, int depth) {
+void HcalTriggerPrimitiveAlgo::addSignal(const IntegerCaloSamples & samples, int depth, const std::pair<double, double>& tdc) {
    HcalTrigTowerDetId id(samples.id());
    SumMap::iterator itr = theSumMap.find(id);
    if(itr == theSumMap.end()) {
       theSumMap.insert(std::make_pair(id, samples));
-      theDepthMap.insert(std::make_pair(id, std::vector<IntegerCaloSamples>(5)));
+      theDepthMap.insert(std::make_pair(id, Sample()));
    }
    else {
       // wish CaloSamples had a +=
@@ -248,13 +324,7 @@ void HcalTriggerPrimitiveAlgo::addSignal(const IntegerCaloSamples & samples, int
       }
    }
 
-   // Depth levels start with 1
-   if (theDepthMap[id][depth - 1].size() == 0) {
-      theDepthMap[id][depth - 1] = samples;
-   } else {
-      for (int i = 0; i < samples.size(); ++i)
-         theDepthMap[id][depth - 1][i] += samples[i];
-   }
+   theDepthMap[id].add(depth, samples, tdc);
 }
 
 
@@ -353,7 +423,7 @@ void HcalTriggerPrimitiveAlgo::analyze(IntegerCaloSamples & samples, HcalUpgrade
       outcoder_->compress(output, finegrain, result);
    }
 
-   result.setDepthData(depth_sums);
+   update(result, theDepthMap[samples.id()], numberOfPresamples_);
 }
 
 
@@ -371,11 +441,17 @@ void HcalTriggerPrimitiveAlgo::analyzeHF(IntegerCaloSamples & samples, HcalUpgra
    TowerMapFGSum::const_iterator tower2fg = theTowerMapFGSum.find(detId);
    assert(tower2fg != theTowerMapFGSum.end());
 
+   Sample depths;
+
    const SumFGContainer& sumFG = tower2fg->second;
    // Loop over all L+S pairs that mapped from samples.id()
    // Note: 1 samples.id() = 6 x (L+S) without noZS
    for (SumFGContainer::const_iterator sumFGItr = sumFG.begin(); sumFGItr != sumFG.end(); ++sumFGItr) {
       const std::vector<bool>& veto = HF_Veto[sumFGItr->id().rawId()];
+
+      if (!veto[numberOfSamples_])
+         depths += theTowerMapFGDepth[detId][sumFGItr->id()];
+
       for (int ibin = 0; ibin < numberOfSamples_; ++ibin) {
          int idx = ibin + shift;
          // if not vetod, add L+S to total sum and calculate FG
@@ -384,15 +460,6 @@ void HcalTriggerPrimitiveAlgo::analyzeHF(IntegerCaloSamples & samples, HcalUpgra
             finegrain[ibin] = (finegrain[ibin] || (*sumFGItr)[idx] >= FG_threshold_);
          }
       }
-   }
-
-   std::vector<int> depth_sums = {0, 0, 0, 0, 0};
-   for (const auto& item: theTowerMapFGDepth[detId]) {
-      // Skip vetoed ids
-      if (HF_Veto[item.first][numberOfPresamples_])
-         continue;
-      for (unsigned int i = 0; i < item.second.size(); ++i)
-         depth_sums[i] += item.second[i][numberOfPresamples_];
    }
 
    IntegerCaloSamples output(samples.id(), numberOfSamples_);
@@ -405,7 +472,7 @@ void HcalTriggerPrimitiveAlgo::analyzeHF(IntegerCaloSamples & samples, HcalUpgra
    }
    outcoder_->compress(output, finegrain, result);
 
-   result.setDepthData(depth_sums);
+   update(result, depths, numberOfPresamples_);
 }
 
 void HcalTriggerPrimitiveAlgo::runZS(HcalTrigPrimDigiCollection & result){

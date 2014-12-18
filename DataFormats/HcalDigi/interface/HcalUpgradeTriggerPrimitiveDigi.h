@@ -29,7 +29,19 @@ class HcalUpgradeTriggerPrimitiveDigi {
   // Set information.  MAXSAMPLES sets size limit.
   //------------------------------------------------------
 
+  void setTimingData (
+        std::vector<double> rise_avg,
+        std::vector<double> rise_rms,
+        std::vector<double> fall_avg,
+        std::vector<double> fall_rms
+        ) {
+     m_rising_avg = rise_avg;
+     m_rising_rms = rise_rms;
+     m_falling_avg = fall_avg;
+     m_falling_rms = fall_rms;
+  };
   void setDepthData ( std::vector<int> d ) { m_depth_data = d; };
+  void setOOTData ( std::vector<int> d ) { m_oot_data = d; };
   void setSize      ( int  size );
   void setPresamples( int  presamples );
   void setZSInfo    ( bool unsuppressed, bool markAndPass);
@@ -67,6 +79,11 @@ class HcalUpgradeTriggerPrimitiveDigi {
   int SOI_compressedEt   () const { return t0().compressedEt   (); }
 
   int SOI_depth_linear(int i) const { return m_depth_data[i - 1]; }
+  double SOI_rising_avg(int i) const { return m_rising_avg[i - 1]; }
+  double SOI_rising_rms(int i) const { return m_rising_rms[i - 1]; }
+  double SOI_falling_avg(int i) const { return m_falling_avg[i - 1]; }
+  double SOI_falling_rms(int i) const { return m_falling_rms[i - 1]; }
+  int SOI_oot_linear(int i) const { return m_oot_data[i - 1]; }
   
  private:
   
@@ -76,7 +93,12 @@ class HcalUpgradeTriggerPrimitiveDigi {
   HcalUpgradeTriggerPrimitiveSample m_data [MAXSAMPLES];
 
   std::vector<int> m_depth_data;
+  std::vector<int> m_oot_data;
 
+  std::vector<double> m_rising_avg;
+  std::vector<double> m_rising_rms;
+  std::vector<double> m_falling_avg;
+  std::vector<double> m_falling_rms;
 };
 
 #endif

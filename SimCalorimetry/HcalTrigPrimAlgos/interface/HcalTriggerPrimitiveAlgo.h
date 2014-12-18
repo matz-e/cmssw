@@ -18,6 +18,57 @@
 class CaloGeometry;
 class IntegerCaloSamples;
 
+class Sample {
+   public:
+      Sample() : samples_(5), oot_(5), rising_(5), falling_(5) {};
+      // Depth levels in the DetId start with 1
+      void add(int depth, const IntegerCaloSamples& samples, const std::pair<double, double>& tdc) {
+         for (int i = 0; i < samples.size(); ++i)
+            samples_[depth - 1][i] += samples[i];
+         if (tdc.first > -998.)
+            rising_[depth - 1].push_back(tdc.first);
+         if (tdc.second > -998.)
+            falling_[depth - 1].push_back(tdc.second);
+
+         if (((tdc.first < tdc.second || tdc.first < -998.) && tdc.second < 0. && tdc.second > -998.)
+               || ((tdc.first < tdc.second || tdc.second < 0.) && tdc.first > 25.)) {
+            for (int i = 0; i < samples.size(); ++i)
+               oot_[depth - 1][i] += samples[i];
+         }
+      };
+      Sample& operator+=(const Sample& o) {
+         for (unsigned d = 0; d < samples_.size(); ++d) {
+            for (int i = 0; i < samples_[d].size(); ++i) {
+               samples_[d][i] += o.samples_[d][i];
+               oot_[d][i] += o.oot_[d][i];
+            }
+            rising_[d].insert(rising_[d].end(), o.rising_[d].begin(), o.rising_[d].end());
+            falling_[d].insert(falling_[d].end(), o.falling_[d].begin(), o.falling_[d].end());
+         }
+         return *this;
+      };
+      const IntegerCaloSamples& operator[](int i) const {
+         return samples_[i];
+      };
+      const IntegerCaloSamples& operator()(int i) const {
+         return oot_[i];
+      };
+      unsigned int size() const {
+         return samples_.size();
+      };
+      const std::vector<double>& rise(int i) const {
+         return rising_[i];
+      };
+      const std::vector<double>& fall(int i) const {
+         return falling_[i];
+      };
+   private:
+      std::vector<IntegerCaloSamples> samples_;
+      std::vector<IntegerCaloSamples> oot_;
+      std::vector<std::vector<double>> rising_;
+      std::vector<std::vector<double>> falling_;
+};
+
 class HcalTriggerPrimitiveAlgo {
 public:
   HcalTriggerPrimitiveAlgo(bool pf, const std::vector<double>& w, 
@@ -48,7 +99,7 @@ public:
   void addSignal(const HBHEDataFrame & frame);
   void addSignal(const HFDataFrame & frame);
   void addSignal(const HcalUpgradeDataFrame& frame);
-  void addSignal(const IntegerCaloSamples & samples, int depth=0);
+  void addSignal(const IntegerCaloSamples & samples, int depth=0, const std::pair<double, double>& tdc={0, 0});
   void addFG(const HcalTrigTowerDetId& id, std::vector<bool>& msb);
 
   /// adds the actual RecHits
@@ -90,15 +141,14 @@ public:
   typedef std::map<HcalTrigTowerDetId, IntegerCaloSamples> SumMap;
   SumMap theSumMap;  
 
-  typedef std::map<HcalTrigTowerDetId, std::vector<IntegerCaloSamples>> DepthMap;
+  typedef std::map<HcalTrigTowerDetId, Sample> DepthMap;
   DepthMap theDepthMap;
   
   typedef std::vector<IntegerCaloSamples> SumFGContainer;
   typedef std::map< HcalTrigTowerDetId, SumFGContainer > TowerMapFGSum;
   TowerMapFGSum theTowerMapFGSum;
 
-  typedef std::vector<IntegerCaloSamples> DepthFGContainer;
-  typedef std::map< uint32_t, DepthFGContainer > DepthFGMap;
+  typedef std::map< uint32_t, Sample > DepthFGMap;
   typedef std::map< HcalTrigTowerDetId, DepthFGMap > TowerMapFGDepth;
   TowerMapFGDepth theTowerMapFGDepth;
 
@@ -132,6 +182,9 @@ void HcalTriggerPrimitiveAlgo::run(const HcalTPGCoder* incoder,
    incoder_=dynamic_cast<const HcaluLUTTPGCoder*>(incoder);
    outcoder_=outcoder;
    coder_=coder;
+
+   theDepthMap.clear();
+   theTowerMapFGDepth.clear();
 
    theSumMap.clear();
    theTowerMapFGSum.clear();
