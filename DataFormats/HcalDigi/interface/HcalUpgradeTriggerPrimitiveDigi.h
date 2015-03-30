@@ -47,6 +47,12 @@ class HcalUpgradeTriggerPrimitiveDigi {
   void setZSInfo    ( bool unsuppressed, bool markAndPass);
   void setSample    ( int i, const HcalUpgradeTriggerPrimitiveSample& sample ) { m_data[i] = sample; }
 
+  const std::vector<int>& getDepthData() const { return m_depth_data; };
+  const std::vector<double>& getRisingAvg() const { return m_rising_avg; };
+  const std::vector<double>& getRisingRMS() const { return m_rising_rms; };
+  const std::vector<double>& getFallingAvg() const { return m_falling_avg; };
+  const std::vector<double>& getFallingRMS() const { return m_falling_rms; };
+
   static const int MAXSAMPLES = 10;
 
   //------------------------------------------------------
