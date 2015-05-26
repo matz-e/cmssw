@@ -162,7 +162,7 @@ void HcalTrigPrimDigiProducer::produce(edm::Event& iEvent, const edm::EventSetup
   //  edm::LogInfo("HcalTrigPrimDigiProducer") << "HcalTrigPrims: " << result->size();
 
   // Step D: Put outputs into event
-  // iEvent.put(result);
+  iEvent.put(result);
   iEvent.put(up_result);
 }
 
