@@ -269,8 +269,8 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
                         if (isMasked) inputLUT_[lutId][adc] = 0;
                         else inputLUT_[lutId][adc] = (LutElement) std::min(std::max(0, int((adc2fC -ped) * gain * rcalib / nominalgain_ / granularity)), OUTPUT_MASK);
 
-                        if (ieta == 1 && iphi == 1)
-                           std::cout << ">>> " << adc << " => " << inputLUT_[lutId][adc] << std::endl;
+                        // if (ieta == 1 && iphi == 1)
+                        //    std::cout << ">>> " << adc << " => " << inputLUT_[lutId][adc] << std::endl;
                      }
                      for (unsigned int adc = 128; adc < INPUT_LUT_SIZE; ++adc) {
                         inputLUT_[lutId][adc] = 0;
