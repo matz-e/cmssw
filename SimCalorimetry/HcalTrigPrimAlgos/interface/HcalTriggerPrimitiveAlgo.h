@@ -99,7 +99,7 @@ public:
   void addSignal(const HBHEDataFrame & frame);
   void addSignal(const HFDataFrame & frame);
   void addSignal(const HcalUpgradeDataFrame& frame);
-  void addSignal(const IntegerCaloSamples & samples, int depth=0, const std::pair<double, double>& tdc={0, 0});
+  void addSignal(const IntegerCaloSamples & samples, int depth=1, const std::pair<double, double>& tdc={0, 0});
   void addFG(const HcalTrigTowerDetId& id, std::vector<bool>& msb);
 
   /// adds the actual RecHits
