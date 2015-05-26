@@ -10,5 +10,6 @@ CaloTPGTranscoder = cms.ESProducer("CaloTPGTranscoderULUTs",
     ZS = cms.vint32(4,2,1,0),
     LUTfactor = cms.vint32(1,2,5,0),
     nominal_gain = cms.double(0.177),
-    RCTLSB = cms.double(0.25)
+    RCTLSB = cms.double(0.25),
+    upgrade = cms.bool(False)
 )
