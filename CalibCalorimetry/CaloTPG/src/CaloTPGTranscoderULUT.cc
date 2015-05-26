@@ -37,7 +37,10 @@ void CaloTPGTranscoderULUT::loadHCALCompress(HcalLutMetadata const& lutMetadata,
                                              HcalTrigTowerGeometry const& theTrigTowerGeometry) {
 // Initialize analytical compression LUT's here
    // TODO cms::Error log
-  if (OUTPUT_LUT_SIZE != (unsigned int) 0x10000) std::cout << "Error: Analytic compression expects 16-bit LUT; found LUT with " << OUTPUT_LUT_SIZE << " entries instead" << std::endl;
+  if (OUTPUT_LUT_SIZE != (unsigned int) 0x400 and not upgrade_)
+    std::cout << "Error: Analytic compression expects 10-bit LUT; found LUT with " << OUTPUT_LUT_SIZE << " entries instead" << std::endl;
+  else if (OUTPUT_LUT_SIZE != (unsigned int) 0x100000 and upgrade_)
+    std::cout << "Error: Analytic compression expects 16-bit LUT; found LUT with " << OUTPUT_LUT_SIZE << " entries instead" << std::endl;
 
   std::vector<unsigned int> analyticalLUT(OUTPUT_LUT_SIZE, 0);
   std::vector<unsigned int> identityLUT(OUTPUT_LUT_SIZE, 0);
