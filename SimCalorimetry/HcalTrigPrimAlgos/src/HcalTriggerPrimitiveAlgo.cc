@@ -328,7 +328,84 @@ void HcalTriggerPrimitiveAlgo::addSignal(const IntegerCaloSamples & samples, int
 }
 
 
-void HcalTriggerPrimitiveAlgo::analyze(IntegerCaloSamples & samples, HcalTriggerPrimitiveDigi & result) {}
+void HcalTriggerPrimitiveAlgo::analyze(IntegerCaloSamples & samples, HcalTriggerPrimitiveDigi & result) {
+   int shrink = weights_.size() - 1;
+   std::vector<bool>& msb = fgMap_[samples.id()];
+   IntegerCaloSamples sum(samples.id(), samples.size());
+
+   //slide algo window
+   for(int ibin = 0; ibin < int(samples.size())- shrink; ++ibin) {
+      int algosumvalue = 0;
+      for(unsigned int i = 0; i < weights_.size(); i++) {
+         //add up value * scale factor
+         algosumvalue += int(samples[ibin+i] * weights_[i]);
+      }
+      if (algosumvalue<0) sum[ibin]=0;            // low-side
+                                                  //high-side
+      //else if (algosumvalue>0x3FF) sum[ibin]=0x3FF;
+      else sum[ibin] = algosumvalue;              //assign value to sum[]
+   }
+
+   // Align digis and TP
+   int dgPresamples=samples.presamples(); 
+   int tpPresamples=numberOfPresamples_;
+   int shift = dgPresamples - tpPresamples;
+   int dgSamples=samples.size();
+   int tpSamples=numberOfSamples_;
+   if(peakfind_){
+       if((shift<shrink) || (shift + tpSamples + shrink > dgSamples - (peak_finder_algorithm_ - 1) )   ){
+	    edm::LogInfo("HcalTriggerPrimitiveAlgo::analyze") << 
+		"TP presample or size from the configuration file is out of the accessible range. Using digi values from data instead...";
+	    shift=shrink;
+	    tpPresamples=dgPresamples-shrink;
+	    tpSamples=dgSamples-(peak_finder_algorithm_-1)-shrink-shift;
+       }
+   }
+
+   std::vector<bool> finegrain(tpSamples,false);
+
+   IntegerCaloSamples output(samples.id(), tpSamples);
+   output.setPresamples(tpPresamples);
+
+   for (int ibin = 0; ibin < tpSamples; ++ibin) {
+      // ibin - index for output TP
+      // idx - index for samples + shift
+      int idx = ibin + shift;
+
+      //Peak finding
+      if (peakfind_) {
+         bool isPeak = false;
+         switch (peak_finder_algorithm_) {
+            case 1 :
+               isPeak = (samples[idx] > samples[idx-1] && samples[idx] >= samples[idx+1] && samples[idx] > theThreshold);
+               break;
+            case 2:
+               isPeak = (sum[idx] > sum[idx-1] && sum[idx] >= sum[idx+1] && sum[idx] > theThreshold);
+               break;
+            default:
+               break;
+         }
+
+         if (isPeak){
+            output[ibin] = std::min<unsigned int>(sum[idx],0x3FF);
+            finegrain[ibin] = msb[idx];
+         }
+         // Not a peak
+         else output[ibin] = 0;
+      }
+      else { // No peak finding, just output running sum
+         output[ibin] = std::min<unsigned int>(sum[idx],0x3FF);
+         finegrain[ibin] = msb[idx];
+      }
+
+      // Only Pegged for 1-TS algo.
+      if (peak_finder_algorithm_ == 1) {
+         if (samples[idx] >= 0x3FF)
+            output[ibin] = 0x3FF;
+      }
+   }
+   outcoder_->compress(output, finegrain, result);
+}
 
 void HcalTriggerPrimitiveAlgo::analyze(IntegerCaloSamples & samples, HcalUpgradeTriggerPrimitiveDigi & result) {
    int shrink = weights_.size() - 1;
