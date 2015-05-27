@@ -511,7 +511,54 @@ void HcalTriggerPrimitiveAlgo::analyze(IntegerCaloSamples & samples, HcalUpgrade
 }
 
 
-void HcalTriggerPrimitiveAlgo::analyzeHF(IntegerCaloSamples & samples, HcalTriggerPrimitiveDigi & result, float rctlsb) {}
+void HcalTriggerPrimitiveAlgo::analyzeHF(IntegerCaloSamples & samples, HcalTriggerPrimitiveDigi & result, float rctlsb) {
+   HcalTrigTowerDetId detId(samples.id());
+
+   // Align digis and TP
+   int dgPresamples=samples.presamples(); 
+   int tpPresamples=numberOfPresamples_;
+   int shift = dgPresamples - tpPresamples;
+   int dgSamples=samples.size();
+   int tpSamples=numberOfSamples_;
+   if(shift<0 || shift+tpSamples>dgSamples){
+	edm::LogInfo("HcalTriggerPrimitiveAlgo::analyzeHF") << 
+	    "TP presample or size from the configuration file is out of the accessible range. Using digi values from data instead...";
+	tpPresamples=dgPresamples;
+	shift=0;
+	tpSamples=dgSamples;
+   }
+
+   std::vector<bool> finegrain(tpSamples, false);
+
+   TowerMapFGSum::const_iterator tower2fg = theTowerMapFGSum.find(detId);
+   assert(tower2fg != theTowerMapFGSum.end());
+
+   const SumFGContainer& sumFG = tower2fg->second;
+   // Loop over all L+S pairs that mapped from samples.id()
+   // Note: 1 samples.id() = 6 x (L+S) without noZS
+   for (SumFGContainer::const_iterator sumFGItr = sumFG.begin(); sumFGItr != sumFG.end(); ++sumFGItr) {
+      const std::vector<bool>& veto = HF_Veto[sumFGItr->id().rawId()];
+      for (int ibin = 0; ibin < tpSamples; ++ibin) {
+         int idx = ibin + shift;
+         // if not vetod, add L+S to total sum and calculate FG
+	 bool vetoed = idx<int(veto.size()) && veto[idx];
+         if (!(vetoed && (*sumFGItr)[idx] > PMT_NoiseThreshold_)) {
+            samples[idx] += (*sumFGItr)[idx];
+            finegrain[ibin] = (finegrain[ibin] || (*sumFGItr)[idx] >= FG_threshold_);
+         }
+      }
+   }
+
+   IntegerCaloSamples output(samples.id(), tpSamples);
+   output.setPresamples(tpPresamples);
+
+   for (int ibin = 0; ibin < tpSamples; ++ibin) {
+      int idx = ibin + shift;
+      output[ibin] = samples[idx] / (rctlsb == 0.25 ? 4 : 8);
+      if (output[ibin] > 0x3FF) output[ibin] = 0x3FF;
+   }
+   outcoder_->compress(output, finegrain, result);
+}
 
 void HcalTriggerPrimitiveAlgo::analyzeHF(IntegerCaloSamples & samples, HcalUpgradeTriggerPrimitiveDigi & result, float rctlsb) {
    HcalTrigTowerDetId detId(samples.id());
