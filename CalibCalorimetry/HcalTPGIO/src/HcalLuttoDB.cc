@@ -252,7 +252,7 @@ HcalLuttoDB::writeoutlut2(HcalTrigTowerDetId id, HcalElectronicsId eid, const st
 std::vector<unsigned char> HcalLuttoDB::extractOutputLut(const CaloTPGTranscoder& coder, HcalTrigTowerDetId chan, HcalTrigTowerGeometry const& theTrigTowerGeometry) {
   std::vector<unsigned char> lut;
   for (int i=0; i<1024; i++) {
-    HcalTriggerPrimitiveSample s=coder.hcalCompress(chan,i,false, theTrigTowerGeometry);
+    HcalTriggerPrimitiveSample s=coder.hcalCompress(chan,i,false);
     lut.push_back(s.compressedEt());
   }
   return lut;
