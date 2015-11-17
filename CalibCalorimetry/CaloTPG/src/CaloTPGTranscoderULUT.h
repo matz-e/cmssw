@@ -70,5 +70,6 @@ public:
 
   LUT *outputLUT_[NOUTLUTS];
   std::vector<RCTdecompression> hcaluncomp_;
+  const HcalTopology* topology_;
 };
 #endif
