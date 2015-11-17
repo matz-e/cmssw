@@ -185,27 +185,6 @@ bool HcalTopology::valid(const DetId& id) const {
   return validHcal(id);
 }
 
-bool HcalTopology::validHT(const HcalTrigTowerDetId& id) const {
-  
-  if (id.iphi()<1 || id.iphi()>72 || id.ieta()==0) return false;
-  if (id.version()==0) {
-    if (id.ietaAbs()>32 || (triggerMode_==HcalTopologyMode::tm_LHC_1x1 && id.ietaAbs()>27)) return false;
-    if (id.ietaAbs()>28) {
-      int iphi=id.iphi();
-      if ((iphi/4)*4 + 1 != iphi) return false;
-      iphi = iphi/4 + 1;	  
-      if (iphi > 18) return false;
-    }
-  } else { // version==1
-    if (triggerMode_==HcalTopologyMode::tm_LHC_RCT) return false;
-    if (id.ietaAbs()<28 || id.ietaAbs()>41) return false;
-    if (id.ietaAbs()>29 && ((id.iphi()%2)==0)) return false;
-    if (id.ietaAbs()>39 && ((id.iphi()%4)!=3)) return false;
-  }
-  return true;
-
-}
-
 bool HcalTopology::validHcal(const HcalDetId& id) const {
   // check the raw rules
   bool ok=validRaw(id);
