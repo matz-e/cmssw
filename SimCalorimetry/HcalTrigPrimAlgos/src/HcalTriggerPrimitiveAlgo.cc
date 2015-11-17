@@ -345,8 +345,6 @@ void HcalTriggerPrimitiveAlgo::analyzeHF(IntegerCaloSamples & samples, HcalTrigg
 	tpSamples=dgSamples;
    }
 
-   std::vector<bool> finegrain(tpSamples, false);
-
    TowerMapFGSum::const_iterator tower2fg = theTowerMapFGSum.find(detId);
    assert(tower2fg != theTowerMapFGSum.end());
 
