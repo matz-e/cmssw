@@ -1003,39 +1003,36 @@ unsigned int HcalTopology::detId2denseIdHT(const DetId& id) const {
     if ((iphi-1)%4==0) index = (iphi-1)*32 + (ietaAbs-1) - (12*((iphi-1)/4));
     else               index = (iphi-1)*28 + (ietaAbs-1) + (4*(((iphi-1)/4)+1));
     if (zside == -1) index += kHThalfPhase0;
-  } else {
-    index = kHTSizePhase0;
-    if (zside == -1) index += ((kHTSizePhase1-kHTSizePhase0)/2);
-    index += (36 * (ietaAbs - 30) + ((iphi - 1)/2));
-  }
 
     return index;
   }
   // HF 1x1 summing and LHC Run 1 simultaneously
   else if (ivers == 1) {
-    int offset = kHTSizePhase0;
+    int index = kHTSizePhase0;
     if (zside == -1) {
       // The negative ieta values are stored on the back half of the part of
       // the array reserved for the new segmentation. kHTSizePhase1 is
       // kHTSizePhase0 + the size of the Version 1 bit on the end, so we
       // subtract off kHTSizePhase0 and then divid by 2 to find the halfway
       // point.
-      offset += (kHTSizePhase1 - kHTSizePhase0) / 2;
+      index += (kHTSizePhase1 - kHTSizePhase0) / 2;
     }
     // ieta 28, 29 have 72 iph
     if (28 <= ietaAbs && ietaAbs <= 29) {
-      return 72 * (ietaAbs - 28) + (iphi - 1) + offset;
+      index += 72 * (ietaAbs - 28) + (iphi - 1);
     } 
     // ieta 30-41 have 36 iphi (1,3,5,7,...)
     else if (30 <= ietaAbs && ietaAbs <= 41) {
-      offset += 2 * 72;  // Accounting for ieta 28, 29
+      index += 2 * 72;  // Accounting for ieta 28, 29
       // (iphi - 1)/2 takes 1,3,5... to 0,1,2...
-      return 36 * (ietaAbs - 30) + ((iphi - 1)/2) + offset;
+      index += 36 * (ietaAbs - 30) + ((iphi - 1)/2);
     }
-  } 
+  } else {
+     // Return -1 if passed an unhandled version or ieta
+     index = -1;
+  }
 
-  // Return -1 if passed an unhandled version or ieta
-  return -1;
+  return index;
 }
 
 unsigned int HcalTopology::detId2denseIdCALIB(const DetId& id) const {
