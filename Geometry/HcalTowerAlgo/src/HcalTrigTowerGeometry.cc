@@ -11,11 +11,6 @@ HcalTrigTowerGeometry::HcalTrigTowerGeometry( const HcalTopology* topology )
   use1x1_=true;
 }
 
-void HcalTrigTowerGeometry::setupHF(bool useShortFibers, bool useQuadRings) {
-  useShortFibers_=useShortFibers;
-  useHFQuadPhiRings_=useQuadRings;
-}
-
 std::vector<HcalTrigTowerDetId> 
 HcalTrigTowerGeometry::towerIds(const HcalDetId & cellId) const {
 
