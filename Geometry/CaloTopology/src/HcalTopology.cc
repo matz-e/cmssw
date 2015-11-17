@@ -47,10 +47,10 @@ HcalTopology::HcalTopology(const HcalDDDRecConstants* hcons) :
   nEtaHE_     = (lastHERing_ - firstHERing_ + 1);
   if (mode_==HcalTopologyMode::LHC) {
     topoVersion_=0; //DL
-    HBSize_     = kHBSizePreLS1; // qie-per-fiber * fiber/rm * rm/rbx * rbx/barrel * barrel/hcal
-    HESize_     = kHESizePreLS1; // qie-per-fiber * fiber/rm * rm/rbx * rbx/endcap * endcap/hcal
-    HOSize_     = kHOSizePreLS1; // ieta * iphi * 2
-    HFSize_     = kHFSizePreLS1; // phi * eta * depth * pm 
+    HBSize_     = kHBSizePhase0; // qie-per-fiber * fiber/rm * rm/rbx * rbx/barrel * barrel/hcal
+    HESize_     = kHESizePhase0; // qie-per-fiber * fiber/rm * rm/rbx * rbx/endcap * endcap/hcal
+    HOSize_     = kHOSizePhase0; // ieta * iphi * 2
+    HFSize_     = kHFSizePhase0; // phi * eta * depth * pm 
     numberOfShapes_ = 87;
   } else if (mode_==HcalTopologyMode::SLHC) { // need to know more eventually
     topoVersion_=10;
@@ -62,11 +62,11 @@ HcalTopology::HcalTopology(const HcalDDDRecConstants* hcons) :
   }
   maxEta_ = (lastHERing_ > lastHFRing_) ? lastHERing_ : lastHFRing_;
   if (triggerMode_ == HcalTopologyMode::tm_LHC_RCT) {
-    HTSize_ = kHTSizePreLS1;
+    HTSize_ = kHTSizePhase0;
   } else if (triggerMode_ == HcalTopologyMode::tm_LHC_RCT_and_1x1) {
     HTSize_ = kHTSizePhase1;
   } else {
-    HTSize_ = kHTSizePhase1-kHTSizePreLS1;
+    HTSize_ = kHTSizePhase1-kHTSizePhase0;
   }
 
 #ifdef DebugLog
