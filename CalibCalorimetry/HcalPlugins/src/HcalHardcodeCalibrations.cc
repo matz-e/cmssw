@@ -81,25 +81,16 @@ namespace {
 	if(zdctopology.valid(zcell)) result.push_back(zcell);     
       }
 
-      // HcalGenTriggerTower (HcalGenericSubdetector = 5) 
-      // NASTY HACK !!!
-      // - As no valid(cell) check found for HcalTrigTowerDetId 
-      // to create HT cells (ieta=1-28, iphi=1-72)&(ieta=29-32, iphi=1,5,... 69)
-
-      for (int eta = -32; eta <= 32; eta++) {
-	if(abs(eta) <= 28 && (eta != 0)) {
-	  for (int phi = 1; phi <= 72; phi++) {
-	    HcalTrigTowerDetId cell(eta, phi);       
-	    result.push_back (cell);
-	  }
-	}
-	else if (abs(eta) > 28) {
-	  for (int phi = 1; phi <= 69;) {
-	    HcalTrigTowerDetId cell(eta, phi);       
-	    result.push_back (cell);
-	    phi += 4;
-	  }
-	}
+      // Loop over all possible (ieta, iphi) and return only valid towers.
+      for (int eta = -41; eta <= 41; eta++) {
+         for (int phi = 1; phi <= 72; phi++) {
+            for (int version = 0; version <= 1; ++version) {
+               HcalTrigTowerDetId cell(eta, phi, 0, version);
+               if (hcaltopology.validHT(cell)) {
+                  result.push_back (cell);
+               }
+            }
+         }
       }
     }
     return result;
