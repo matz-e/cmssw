@@ -86,14 +86,14 @@ void CaloTPGTranscoderULUT::loadHCALCompress(HcalLutMetadata const& lutMetadata,
 
           HcalTrigTowerDetId id(ieta, iphi);
           id.setVersion(version_of_hcal_TPs);
-          const HcalLutMetadatum *meta = lutMetadata_->getValues(id);
+          const HcalLutMetadatum *meta = lutMetadata.getValues(id);
           int threshold = meta->getOutputLutThreshold();
 
           for (int i = 0; i < threshold; ++i)
               outputLUT_[lutId][i] = 0;
 
           for (unsigned int i = threshold; i < OUTPUT_LUT_SIZE; ++i)
-              outputLUT_[lutId][i] = (abs(ieta) < theTrigTowerGeometry->firstHFTower(id.version())) ? analyticalLUT[i] : identityLUT[i];
+              outputLUT_[lutId][i] = (abs(ieta) < theTrigTowerGeometry.firstHFTower()) ? analyticalLUT[i] : identityLUT[i];
       } //for iphi
   } //for ieta
 }
@@ -214,6 +214,7 @@ void CaloTPGTranscoderULUT::loadHCALUncompress(HcalLutMetadata const& lutMetadat
 
    // Version 0 loop
    for (int ieta = -32; ieta <= 32; ++ieta){
+      const int version_of_hcal_TPs = 0;
 
       double eta_low = 0., eta_high = 0.;
 		theTrigTowerGeometry.towerEtaBounds(ieta,eta_low,eta_high); 
@@ -233,7 +234,6 @@ void CaloTPGTranscoderULUT::loadHCALUncompress(HcalLutMetadata const& lutMetadat
             factor = rctlsb_factor_;
          // HBHE
          else {
-             const HcalLutMetadatum *meta = lutMetadata_->getValues(id);
              factor = nominal_gain_ / cosh_ieta * meta->getLutGranularity();
          }
 
@@ -259,7 +259,7 @@ void CaloTPGTranscoderULUT::loadHCALUncompress(HcalLutMetadata const& lutMetadat
        if (abs(ieta) < 28) { continue; }
 
        double eta_low = 0., eta_high = 0.;
-       theTrigTowerGeometry->towerEtaBounds(ieta, version_of_hcal_TPs, eta_low, eta_high);
+       theTrigTowerGeometry.towerEtaBounds(ieta, eta_low, eta_high);
        double cosh_ieta = fabs(cosh((eta_low + eta_high)/2.));
 
        for (int iphi = 1; iphi <= 72; iphi++) {
@@ -271,12 +271,12 @@ void CaloTPGTranscoderULUT::loadHCALUncompress(HcalLutMetadata const& lutMetadat
 
            double factor = 0.;
            // HF
-           if (abs(ieta) >= theTrigTowerGeometry->firstHFTower(version_of_hcal_TPs)) {
+           if (abs(ieta) >= theTrigTowerGeometry.firstHFTower()) {
                factor = rctlsb_factor_;
            }
            // HBHE
            else {
-               const HcalLutMetadatum *meta = lutMetadata_->getValues(id);
+               const HcalLutMetadatum *meta = lutMetadata.getValues(id);
                factor = nominal_gain_ / cosh_ieta * meta->getLutGranularity();
            }
 
@@ -300,7 +300,7 @@ void CaloTPGTranscoderULUT::loadHCALUncompress(HcalLutMetadata const& lutMetadat
    } // for ieta
 }
 
-void CaloTPGTranscoderULUT::loadHCALUncompress(const std::string& filename) const {
+void CaloTPGTranscoderULUT::loadHCALUncompress(const std::string& filename, HcalLutMetadata const& lutMetadata, HcalTrigTowerGeometry const& theTrigTowerGeometry) {
   // TODO: Add Version 1 support
   const int version_of_hcal_TPs = 0;
   std::ifstream userfile;
@@ -349,10 +349,11 @@ HcalTriggerPrimitiveSample CaloTPGTranscoderULUT::hcalCompress(const HcalTrigTow
 
 double CaloTPGTranscoderULUT::hcaletValue(const int& ieta, const int& iphi, const int& compET) const {
   double etvalue = 0.;
-  int itower = getOutputLUTId(ieta, iphi);  // TODO Add version
-  if (itower < 0) std::cout << "hcaletValue error: no decompression LUT found for ieta, iphi = " << ieta << ", " << iphi << std::endl;
-  else if (compET < 0 || compET > 0xff) std::cout << "hcaletValue error: compressed value out of range: eta, phi, cET = " << ieta << ", " << iphi << ", " << compET << std::endl;
-  else etvalue = hcaluncomp_[itower][compET];
+  // int itower = getOutputLUTId(ieta, iphi);  // TODO Add version
+  // if (itower < 0) std::cout << "hcaletValue error: no decompression LUT found for ieta, iphi = " << ieta << ", " << iphi << std::endl;
+  // else if (compET < 0 || compET > 0xff) std::cout << "hcaletValue error: compressed value out of range: eta, phi, cET = " << ieta << ", " << iphi << ", " << compET << std::endl;
+  // else etvalue = hcaluncomp_[itower][compET];
+  assert(0);
   return(etvalue);
 }
 
@@ -361,19 +362,20 @@ double CaloTPGTranscoderULUT::hcaletValue(const int& ieta, const int& compET) co
 // The user is encouraged to use hcaletValue(const int& ieta, const int& iphi, const int& compET) instead
 
   double etvalue = 0.;
-  if (compET < 0 || compET > 0xff) std::cout << "hcaletValue error: compressed value out of range: eta, cET = " << ieta << ", " << compET << std::endl;
-  else {
-	int nphi = 0;
-	for (int iphi=1; iphi <= 72; iphi++) {
-		if (HTvalid(ieta, iphi)) {  // TODO Add version
-			nphi++;
-			int itower = getOutputLUTId(ieta, iphi);  // TODO Add version
-			etvalue += hcaluncomp_[itower][compET];
-		}
-	}
-	if (nphi > 0) etvalue /= nphi;
-	else std::cout << "hcaletValue error: no decompression LUTs found for any iphi for ieta = " << ieta << std::endl;
-  }
+  // if (compET < 0 || compET > 0xff) std::cout << "hcaletValue error: compressed value out of range: eta, cET = " << ieta << ", " << compET << std::endl;
+  // else {
+	// int nphi = 0;
+	// for (int iphi=1; iphi <= 72; iphi++) {
+		// if (HTvalid(ieta, iphi)) {  // TODO Add version
+			// nphi++;
+			// int itower = getOutputLUTId(ieta, iphi);  // TODO Add version
+			// etvalue += hcaluncomp_[itower][compET];
+		// }
+	// }
+	// if (nphi > 0) etvalue /= nphi;
+	// else std::cout << "hcaletValue error: no decompression LUTs found for any iphi for ieta = " << ieta << std::endl;
+  // }
+  assert(0);
   return(etvalue);
 }
 
