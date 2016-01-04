@@ -51,7 +51,12 @@ void CaloTPGTranscoderULUT::loadHCALCompress(HcalLutMetadata const& lutMetadata,
 
     for(std::vector<DetId>::iterator i=allChannels.begin(); i!=allChannels.end(); ++i){
 
-	if(HcalDetId(*i).subdet()!=HcalTriggerTower) continue;
+	try {
+	    if(HcalDetId(*i).subdet()!=HcalTriggerTower)
+		continue;
+	} catch (...) {
+	    continue;
+	}
 	
 	HcalTrigTowerDetId id(*i); 
 	if(!theTopology->validHT(id)) continue;
