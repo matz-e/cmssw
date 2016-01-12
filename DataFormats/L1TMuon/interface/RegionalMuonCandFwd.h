@@ -9,6 +9,8 @@ namespace l1t {
 	};
 	class RegionalMuonCand;
 	typedef BXVector<RegionalMuonCand> RegionalMuonCandBxCollection;
+	class EMTFMuonCand;
+	typedef BXVector<EMTFMuonCand> EMTFMuonCandBxCollection;
 }
 
 #endif /* define __l1t_regional_muon_candidatefwd_h__ */
