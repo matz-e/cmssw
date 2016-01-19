@@ -73,6 +73,7 @@ namespace l1t {
          int amc13TrailerSize_;
 
          bool ctp7_mode_;
+         bool mtf7_mode_;
          bool debug_;
    };
 }
@@ -87,9 +88,14 @@ namespace l1t {
       fedIds_(config.getParameter<std::vector<int>>("FedIds")),
       fwId_(-1),
       fwOverride_(false),
-      ctp7_mode_(config.getUntrackedParameter<bool>("CTP7", false))
+      ctp7_mode_(config.getUntrackedParameter<bool>("CTP7", false)),
+      mtf7_mode_(config.getUntrackedParameter<bool>("MTF7", false))
    {
       fedData_ = consumes<FEDRawDataCollection>(config.getParameter<edm::InputTag>("InputLabel"));
+
+      if (ctp7_mode_ and mtf7_mode_) {
+         throw cms::Exception("L1TRawToDigi") << "Can only use one unpacking mode concurrently!";
+      }
 
       fwId_ = config.getParameter<unsigned int>("FWId");
       fwOverride_ = config.getParameter<bool>("FWOverride");
@@ -189,6 +195,9 @@ namespace l1t {
          }
 
          for (auto& amc: packet.payload()) {
+            if (amc.size() == 0)
+               continue;
+
             auto payload64 = amc.data();
             const uint32_t * start = (const uint32_t*) payload64.get();
             // Want to have payload size in 32 bit words, but AMC measures
@@ -199,6 +208,9 @@ namespace l1t {
             if (ctp7_mode_) {
                LogDebug("L1T") << "Using CTP7 mode";
                payload.reset(new CTP7Payload(start, end));
+            } else if (mtf7_mode_) {
+               LogDebug("L1T") << "Using MTF7 mode";
+               payload.reset(new MTF7Payload(start, end));
             } else {
                LogDebug("L1T") << "Using MP7 mode; legacy MC bit: " << legacy_mc;
                payload.reset(new MP7Payload(start, end, legacy_mc));
@@ -257,6 +269,7 @@ namespace l1t {
      desc.add<unsigned int>("FWId",-1)->setComment("32 bits: if the first eight bits are 0xff, will read the 74x MC format - but need to have FWOverride=true");
      desc.add<bool>("FWOverride", false);
      desc.addUntracked<bool>("CTP7", false);
+     desc.addUntracked<bool>("MTF7", false);
      desc.add<edm::InputTag>("InputLabel",edm::InputTag("rawDataCollector"));
      desc.add<std::vector<int>>("FedIds", {});
      desc.add<std::string>("Setup", "");
