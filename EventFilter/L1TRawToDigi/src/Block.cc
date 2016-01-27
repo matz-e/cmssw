@@ -8,9 +8,7 @@
 
 namespace l1t {
 
-   const std::vector<unsigned int>
-   MTF7Payload::block_patterns_ =
-   {
+   const std::vector<unsigned int> MTF7Payload::block_patterns_ = {
       // The "0b" prefix indicates binary; the block header id is stored in decimal.
       // Bits are the left-most bit (D15) of every 16-bit word in the format document.
       // Bottom-to-top in the document maps to left-to-right in each of the block_patterns_
