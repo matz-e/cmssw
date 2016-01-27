@@ -7,6 +7,15 @@
 #define EDM_ML_DEBUG 1
 
 namespace l1t {
+   const std::vector<unsigned int> MTF7Payload::block_patterns_ = {
+      0b000111111111, // header
+      0b0010,         // counter
+      0b0011,         // ME
+      0b0100,         // RPC
+      0b01100101,     // SP
+      0b11111111      // trailer
+   };
+
    uint32_t
    BlockHeader::raw(block_t type) const
    {
@@ -100,16 +109,30 @@ namespace l1t {
       } else if (
             false) {
          // TODO: check trailer
-      } else {
-         data_ += (header_size + counter_size) / 2;
-         end_ -= trailer_size / 2;
       }
+   }
 
-      block_sizes_ = {
-         {0b0011, {1, 0b0011}},
-         {0b0100, {1, 0b0100}},
-         {0b0101, {2, 0b01100101}}
-      };
+   int
+   MTF7Payload::count(unsigned int pattern, unsigned int length) const
+   {
+      unsigned int mask = 0;
+      for (; length > 0; length--)
+         mask = (mask << 4) | 0xf;
+
+      int count = 0;
+      for (const auto& p: block_patterns_)
+         count += (p & mask) == pattern;
+      return count;
+   }
+
+   bool
+   MTF7Payload::valid(unsigned int pattern) const
+   {
+      for (const auto& p: block_patterns_) {
+         if (p == pattern)
+            return true;
+      }
+      return false;
    }
 
    std::auto_ptr<Block>
@@ -119,30 +142,31 @@ namespace l1t {
          return std::auto_ptr<Block>(0);
 
       const uint16_t * data16 = reinterpret_cast<const uint16_t*>(data_);
+      const uint16_t * end16 = reinterpret_cast<const uint16_t*>(end_);
 
-      unsigned int id = (data16[0] >> 15) | ((data16[1] >> 15) << 1) | ((data16[2] >> 15) << 2) | ((data16[3] >> 15) << 3);
-      unsigned int check = 0;
-
-      if (block_sizes_.find(id) == block_sizes_.end()) {
-         edm::LogWarning("L1T") << "MTF7 block with unrecognized id " << id;
-         return std::auto_ptr<Block>(0);
-      } else if (end_ - data_ < 2 * block_sizes_[id].first) {
-         edm::LogWarning("L1T") << "MTF7 block with size exceeding payload (id: " << id << ")";
-         return std::auto_ptr<Block>(0);
-      }
-
+      // Read in blocks equivalent to 64 bit words, trying to match the
+      // pattern of first bits to what is deemed valid.
       std::vector<uint32_t> payload;
-      for (unsigned int i = 0; i < block_sizes_[id].first * 4; ++i) {
-         check |= (data16[i] >> 15) << i;
-         payload.push_back(data16[i]);
-      }
-      data_ += block_sizes_[id].first * 2;
+      unsigned int pattern = 0;
+      unsigned int i = 0;
+      for (; i < max_block_length_ and data16 + (i + 1) * 4 <= end16; ++i) {
+         for (int j = 0; j < 4; ++j) {
+            auto n = i * 4 + j;
+            pattern |= (data16[n] >> 15) << n;
+            payload.push_back(data16[n]);
+         }
 
-      if (check != block_sizes_[id].second) {
-         edm::LogWarning("L1T") << "Incorrect full id " << check;
+         if (count(pattern, i + 1) == 1 and valid(pattern))
+            break;
       }
 
-      return std::auto_ptr<Block>(new Block(block_sizes_[id].second, payload, 0, MTF7));
+      if (not valid(pattern)) {
+         edm::LogWarning("L1T") << "MTF7 block with unrecognized id 0x" << std::hex << pattern;
+         return std::auto_ptr<Block>(0);
+      }
+
+      data_ += (i + 1) * 2;
+      return std::auto_ptr<Block>(new Block(pattern, payload, 0, MTF7));
    }
 
    CTP7Payload::CTP7Payload(const uint32_t * data, const uint32_t * end) : Payload(data, end)

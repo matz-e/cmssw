@@ -1,7 +1,6 @@
 #ifndef Block_h
 #define Block_h
 
-#include <map>
 #include <memory>
 #include <vector>
 
@@ -108,9 +107,13 @@ namespace l1t {
          static const unsigned int counter_size = 4;
          static const unsigned int trailer_size = 8;
 
-         // id (first bits of 16 bit words) → (size in 64 bit words, check
-         // of 1st bits)
-         std::map<int, std::pair<unsigned int, unsigned int>> block_sizes_;
+         // maximum of the block length (64bits) and bit patterns of the
+         // first bits (of 16bit words)
+         static const unsigned int max_block_length_ = 3;
+         static const std::vector<unsigned int> block_patterns_;
+
+         int count(unsigned int pattern, unsigned int length) const;
+         bool valid(unsigned int pattern) const;
    };
 
    class CTP7Payload : public Payload {
