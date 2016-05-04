@@ -146,7 +146,11 @@ namespace l1t {
             LogDebug("L1T") << s.str();
 #endif
 
-            load32.push_back(block.header().raw(MP7));
+            // MTF7 does not have a block-header, instead saves information
+            // in the first bits of its payload words.
+            if (block.header().getType() == MP7) {
+               load32.push_back(block.header().raw(MP7));
+            }
             load32.insert(load32.end(), load.begin(), load.end());
          }
 

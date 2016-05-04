@@ -46,8 +46,7 @@ namespace l1t {
       public:
          Block(const BlockHeader& h, const uint32_t * payload_start, const uint32_t * payload_end) :
             header_(h), payload_(payload_start, payload_end) {};
-         Block(unsigned int id, const std::vector<uint32_t>& payload, unsigned int capID=0, block_t type=MP7) :
-            header_(id, payload.size(), capID, type), payload_(payload) {};
+         Block(unsigned int id, const std::vector<uint32_t>& payload, unsigned int capID=0, block_t type=MP7);
 
          bool operator<(const Block& o) const { return header() < o.header(); };
 

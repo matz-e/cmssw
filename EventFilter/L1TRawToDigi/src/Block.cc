@@ -28,13 +28,34 @@ namespace l1t {
       if (type_ == MP7) {
          LogTrace("L1T") << "Writing MP7 link header";
          return ((id_ & ID_mask) << ID_shift) | ((size_ & size_mask) << size_shift) | ((capID_ & capID_mask) << capID_shift);
+      } else if (type_ == MTF7) {
+         edm::LogError("L1T") << "Trying to create MTF7 - which is not in the specification";
+         return 0;
       }
-      // if (type_ == MTF7) {
-      //    LogTrace("L1T") << "Writing MTF7 link header";
-      //    return ((id_ & ID_mask) << ID_shift) | ((size_ & size_mask) << size_shift) | ((capID_ & capID_mask) << capID_shift);
-      // }
       LogTrace("L1T") << "Writing CTP7 link header";
       return ((id_ & CTP7_mask) << CTP7_shift);
+   }
+
+   Block::Block(unsigned int id, const std::vector<uint32_t>& payload, unsigned int capID, block_t type) :
+      header_(id, payload.size(), capID, type), payload_(payload)
+   {
+      // Need to encode the ID in the first bits of the payload words, and
+      // repack those from 15 bit → 32 bits.
+      if (type == MTF7) {
+         uint32_t buffer = 0;
+         payload_.clear();
+
+         for (unsigned int i = 0; i < payload.size(); ++i) {
+            uint32_t leading_bit = ((id >> i) & 0x1) << 15;
+            if (i % 2 == 0) {
+               buffer = (payload[i] & 0x7fff) | leading_bit;
+            } else {
+               buffer |= ((payload[i] & 0x7fff) | leading_bit) << 16;
+               payload_.push_back(buffer);
+               buffer = 0;
+            }
+         }
+      }
    }
 
    std::auto_ptr<Block>
