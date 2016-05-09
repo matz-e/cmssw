@@ -36,7 +36,16 @@ namespace l1t {
 	    // Should we even be doing a MuonPacker? = AWB 11.01.15
 	    PackerFactory::get()->make("stage2::MuonPacker"),
 	  };
-	}
+	} else {
+          res[{1, 1}] = {
+             PackerFactory::get()->make("stage2::EMTFDummyHeaderPacker"),
+             PackerFactory::get()->make("stage2::EMTFDummyCounterPacker"),
+             PackerFactory::get()->make("stage2::EMTFDummyMEPacker"),
+             PackerFactory::get()->make("stage2::EMTFDummyRPCPacker"),
+             PackerFactory::get()->make("stage2::EMTFDummySPPacker"),
+             PackerFactory::get()->make("stage2::EMTFDummyTrailerPacker"),
+          };
+        }
 	
 	return res;
       }; // End virtual PackerMap getPackers
