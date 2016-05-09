@@ -125,15 +125,25 @@ namespace l1t {
             block_load.insert(block_load.end(), blocks.begin(), blocks.end());
          }
 
-         std::sort(block_load.begin(), block_load.end());
-
          LogDebug("L1T") << "Concatenating blocks";
 
          std::vector<uint32_t> load32;
-         // TODO Infrastructure firmware version.  Currently not used.
-         // Would change the way the payload has to be unpacked.
-         load32.push_back(0);
-         load32.push_back(fwId_);
+         if (std::all_of(block_load.begin(), block_load.end(), [](const auto& block) { return block.header().getType() == MP7; })) {
+
+            // TODO is this really needed?  It breaks MTF7, that's why
+            // it's in the if-clause
+            std::sort(block_load.begin(), block_load.end());
+            // TODO Infrastructure firmware version.  Currently not used.
+            // Would change the way the payload has to be unpacked.
+            LogDebug("L1T") << "Adding MP7 payload header";
+            load32.push_back(0);
+            load32.push_back(fwId_);
+         } else if (std::all_of(block_load.begin(), block_load.end(), [](const auto& block) { return block.header().getType() == MTF7; })) {
+            // MTF7 does not have an additional specific payload header.
+            // The payload header is packed by a specific packer.
+         } else {
+            edm::LogError("L1T") << "Inhomogeneous payload.  Expect breakage down the line.";
+         }
          for (const auto& block: block_load) {
             LogDebug("L1T") << "Adding block " << block.header().getID() << " with size " << block.payload().size();
             auto load = block.payload();

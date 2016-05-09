@@ -193,7 +193,7 @@ namespace l1t {
       }
 
       data_ += (i + 1) * 2;
-      return std::auto_ptr<Block>(new Block(pattern, payload, 0, MTF7));
+      return std::auto_ptr<Block>(new Block(BlockHeader(pattern, payload.size(), 0, MTF7), payload));
    }
 
    CTP7Payload::CTP7Payload(const uint32_t * data, const uint32_t * end) : Payload(data, end)
