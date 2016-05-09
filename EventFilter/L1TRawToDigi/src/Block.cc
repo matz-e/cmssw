@@ -180,7 +180,7 @@ namespace l1t {
          for (int j = 0; j < 4; ++j) {
             auto n = i * 4 + j;
             pattern |= (data16[n] >> 15) << n;
-            payload.push_back(data16[n]);
+            payload.push_back(data16[n] & 0x7fff);
          }
 
          if (count(pattern, i + 1) == 1 and valid(pattern))
