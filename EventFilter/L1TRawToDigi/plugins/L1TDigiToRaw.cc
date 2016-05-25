@@ -121,7 +121,7 @@ namespace l1t {
          Blocks block_load;
          for (const auto& packer: packers) {
             LogDebug("L1T") << "Adding packed blocks";
-            auto blocks = packer->pack(event, tokens_.get());
+            auto blocks = packer->pack(event, tokens_.get(), amc_no, board);
             block_load.insert(block_load.end(), blocks.begin(), blocks.end());
          }
 

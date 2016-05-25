@@ -20,7 +20,7 @@ namespace l1t {
   namespace stage1 {
     class RCTEmRegionPacker : public Packer {
       public:
-        virtual Blocks pack(const edm::Event&, const PackerTokens*) override;
+        virtual Blocks pack(const edm::Event&, const PackerTokens*, int amc_no, int board) override;
     };
   }
 }
@@ -30,7 +30,7 @@ namespace l1t {
 namespace l1t {
   namespace stage1 {
     Blocks
-      RCTEmRegionPacker::pack(const edm::Event& event, const PackerTokens* toks){ 
+      RCTEmRegionPacker::pack(const edm::Event& event, const PackerTokens* toks, int amc_no, int board){ 
         edm::Handle<L1CaloRegionCollection> caloregion;
         event.getByToken(static_cast<const CaloTokens*>(toks)->getCaloRegionToken(), caloregion);
 

@@ -10,7 +10,7 @@ namespace l1t {
       class MuonPacker : public Packer {
          public:
 	    MuonPacker(unsigned b1) : b1_(b1) {}
-            virtual Blocks pack(const edm::Event&, const PackerTokens*) override;
+            virtual Blocks pack(const edm::Event&, const PackerTokens*, int amc_no, int board) override;
             unsigned b1_;
          private:
             typedef std::map<unsigned int, std::vector<uint32_t>> PayloadMap;
@@ -35,7 +35,7 @@ namespace l1t {
 namespace l1t {
    namespace stage2 {
       Blocks
-      MuonPacker::pack(const edm::Event& event, const PackerTokens* toks)
+      MuonPacker::pack(const edm::Event& event, const PackerTokens* toks, int amc_no, int board)
       {
          edm::Handle<MuonBxCollection> muons;
          event.getByToken(static_cast<const CommonTokens*>(toks)->getMuonToken(), muons);
