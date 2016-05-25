@@ -12,13 +12,13 @@ namespace l1t {
       class TrailersBlockUnpacker : public Unpacker { // "TrailersBlockUnpacker" inherits from "Unpacker"
       public:
 	virtual int  checkFormat(const Block& block);
-	virtual bool unpack(const Block& block, UnpackerCollections *coll) override; // Apparently it's always good to use override in C++
+	virtual bool unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup) override; // Apparently it's always good to use override in C++
 	// virtual bool packBlock(const Block& block, UnpackerCollections *coll) override;
       };
       
       // class TrailersBlockPacker : public Packer { // "TrailersBlockPacker" inherits from "Packer"
       // public:
-      // 	virtual bool unpack(const Block& block, UnpackerCollections *coll) override; // Apparently it's always good to use override in C++
+      // 	virtual bool unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup) override; // Apparently it's always good to use override in C++
       // };
       
     }
@@ -77,7 +77,7 @@ namespace l1t {
 
       }
 
-      bool TrailersBlockUnpacker::unpack(const Block& block, UnpackerCollections *coll) {
+      bool TrailersBlockUnpacker::unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup) {
 	
 	// Get the payload for this block, made up of 16-bit words (0xffff)
 	// Format defined in MTF7Payload::getBlock() in src/Block.cc

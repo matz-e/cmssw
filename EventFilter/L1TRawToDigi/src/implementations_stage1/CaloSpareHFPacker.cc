@@ -8,7 +8,7 @@ namespace l1t {
   namespace stage1 {
     class CaloSpareHFPacker : public Packer {
       public:
-        virtual Blocks pack(const edm::Event&, const PackerTokens*, int amc_no, int board) override;
+        virtual Blocks pack(const edm::Event&, const edm::EventSetup&, const PackerTokens*, int amc_no, int board) override;
     };
   }
 }
@@ -18,7 +18,7 @@ namespace l1t {
 namespace l1t {
   namespace stage1 {
     Blocks
-      CaloSpareHFPacker::pack(const edm::Event& event, const PackerTokens* toks, int amc_no, int board)
+      CaloSpareHFPacker::pack(const edm::Event& event, const edm::EventSetup& setup, const PackerTokens* toks, int amc_no, int board)
       {
         edm::Handle<CaloSpareBxCollection> calosparesHFBitCounts;
         event.getByToken(static_cast<const CaloTokens*>(toks)->getCaloSpareHFBitCountsToken(), calosparesHFBitCounts);

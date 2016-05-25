@@ -229,7 +229,7 @@ namespace l1t {
             unsigned board = amc.blockHeader().getBoardID();
             unsigned amc_no = amc.blockHeader().getAMCNumber();
 
-            auto unpackers = prov_->getUnpackers(fedId, board, amc_no, fw);
+            auto unpackers = prov_->getUnpackers(fedId, board, amc_no, fw, setup);
 
             // getBlock() returns a non-null auto_ptr on success
             std::auto_ptr<Block> block;
@@ -256,7 +256,7 @@ namespace l1t {
                      << "\n\tAMC: # " << amc_no << ", board ID 0x" << std::hex << board << std::dec
                      << "\n\tFED ID " << fedId << ", and FW ID " << fw;
                   // TODO Handle error
-               } else if (!unpacker->second->unpack(*block, coll.get())) {
+               } else if (!unpacker->second->unpack(*block, coll.get(), setup)) {
                   LogDebug("L1T") << "Error unpacking data for block ID "
                      << block->header().getID() << ", AMC # " << amc_no
                      << ", board ID " << board << ", FED ID " << fedId

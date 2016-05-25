@@ -25,7 +25,7 @@ namespace l1t {
       };
 
       // Ignore Packer functionality for now - AWB 27.01.16
-      virtual PackerMap getPackers(int fed, unsigned int fw) override {
+      virtual PackerMap getPackers(int fed, unsigned int fw, const edm::EventSetup& setup) override {
 	PackerMap res;
 	
 	if (fed == 1402) {
@@ -52,7 +52,7 @@ namespace l1t {
 	return std::unique_ptr<UnpackerCollections>(new EMTFCollections(e));
       };
       
-      virtual UnpackerMap getUnpackers(int fed, int board, int amc, unsigned int fw) override {
+      virtual UnpackerMap getUnpackers(int fed, int board, int amc, unsigned int fw, const edm::EventSetup& setup) override {
 	// Presumably need some logic based on fed, amc, etc (c.f. CaloSetup.cc) - AWB 11.01.16
 	UnpackerMap res;
 	

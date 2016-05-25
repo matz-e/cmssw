@@ -11,7 +11,7 @@ namespace l1t {
       class EGammaPacker : public Packer {
          public:
 	    EGammaPacker(int b1, int b2) : b1_(b1), b2_(b2) {}
-            virtual Blocks pack(const edm::Event&, const PackerTokens*, int amc_no, int board) override;
+            virtual Blocks pack(const edm::Event&, const edm::EventSetup&, const PackerTokens*, int amc_no, int board) override;
 	    int b1_, b2_;
       };
 
@@ -31,7 +31,7 @@ namespace l1t {
 namespace l1t {
 namespace stage2 {
    Blocks
-   EGammaPacker::pack(const edm::Event& event, const PackerTokens* toks, int amc_no, int board)
+   EGammaPacker::pack(const edm::Event& event, const edm::EventSetup& setup, const PackerTokens* toks, int amc_no, int board)
    {
       edm::Handle<EGammaBxCollection> egs;
       event.getByToken(static_cast<const CommonTokens*>(toks)->getEGammaToken(), egs);

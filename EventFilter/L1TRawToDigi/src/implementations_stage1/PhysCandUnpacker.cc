@@ -77,62 +77,62 @@ namespace l1t {
   namespace stage1 {
     class IsoEGammaUnpackerLeft : public Unpacker {
       public:
-        virtual bool unpack(const Block& block, UnpackerCollections *coll) override;
+        virtual bool unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup) override;
     };
 
     class NonIsoEGammaUnpackerLeft : public Unpacker {
       public:
-        virtual bool unpack(const Block& block, UnpackerCollections *coll) override;
+        virtual bool unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup) override;
     };
 
     class CentralJetUnpackerLeft : public Unpacker {
       public:
-        virtual bool unpack(const Block& block, UnpackerCollections *coll) override;
+        virtual bool unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup) override;
     };
 
     class ForwardJetUnpackerLeft : public Unpacker {
       public:
-        virtual bool unpack(const Block& block, UnpackerCollections *coll) override;
+        virtual bool unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup) override;
     };
 
     class TauUnpackerLeft : public Unpacker {
        public:
-        virtual bool unpack(const Block& block, UnpackerCollections *coll) override;
+        virtual bool unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup) override;
     };
 
     class IsoTauUnpackerLeft : public Unpacker {
        public:
-        virtual bool unpack(const Block& block, UnpackerCollections *coll) override;
+        virtual bool unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup) override;
     };
 
     class IsoEGammaUnpackerRight : public Unpacker {
       public:
-        virtual bool unpack(const Block& block, UnpackerCollections *coll) override;
+        virtual bool unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup) override;
     };
 
     class NonIsoEGammaUnpackerRight : public Unpacker {
       public:
-        virtual bool unpack(const Block& block, UnpackerCollections *coll) override;
+        virtual bool unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup) override;
     };
 
     class CentralJetUnpackerRight : public Unpacker {
       public:
-        virtual bool unpack(const Block& block, UnpackerCollections *coll) override;
+        virtual bool unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup) override;
     };
 
     class ForwardJetUnpackerRight : public Unpacker {
       public:
-        virtual bool unpack(const Block& block, UnpackerCollections *coll) override;
+        virtual bool unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup) override;
     };
 
     class TauUnpackerRight : public Unpacker {
        public:
-        virtual bool unpack(const Block& block, UnpackerCollections *coll) override;
+        virtual bool unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup) override;
     };
 
     class IsoTauUnpackerRight : public Unpacker {
        public:
-        virtual bool unpack(const Block& block, UnpackerCollections *coll) override;
+        virtual bool unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup) override;
     };
 
   }
@@ -143,84 +143,84 @@ namespace l1t {
 namespace l1t {
   namespace stage1 {
     bool
-    IsoEGammaUnpackerLeft::unpack(const Block& block, UnpackerCollections *coll)
+    IsoEGammaUnpackerLeft::unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup)
     {
        auto res = static_cast<CaloCollections*>(coll)->getEGammas();
        return process(block, res, [](l1t::EGamma eg) { eg.setHwIso(1); return eg; },true,true,false);
     }
 
     bool
-    NonIsoEGammaUnpackerLeft::unpack(const Block& block, UnpackerCollections *coll)
+    NonIsoEGammaUnpackerLeft::unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup)
     {
        auto res = static_cast<CaloCollections*>(coll)->getEGammas();
        return process(block, res, [](const l1t::EGamma& eg) { return eg; },true,false,false);
     }
 
     bool
-    CentralJetUnpackerLeft::unpack(const Block& block, UnpackerCollections *coll)
+    CentralJetUnpackerLeft::unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup)
     {
        auto res = static_cast<CaloCollections*>(coll)->getJets();
        return process(block, res, [](const l1t::Jet& j) { return j; },true,true,false);
     }
 
     bool
-    ForwardJetUnpackerLeft::unpack(const Block& block, UnpackerCollections *coll)
+    ForwardJetUnpackerLeft::unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup)
     {
        auto res = static_cast<CaloCollections*>(coll)->getJets();
        return process(block, res, [](l1t::Jet j) { j.setHwQual(j.hwQual() | 2); return j; },true,false,false);
     }
 
     bool
-    TauUnpackerLeft::unpack(const Block& block, UnpackerCollections *coll)
+    TauUnpackerLeft::unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup)
     {
        auto res = static_cast<CaloCollections*>(coll)->getTaus();
        return process(block, res, [](const l1t::Tau& t) { return t; },true,true,true);
     }
 
     bool
-    IsoTauUnpackerLeft::unpack(const Block& block, UnpackerCollections *coll)
+    IsoTauUnpackerLeft::unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup)
     {
        auto res = static_cast<CaloCollections*>(coll)->getIsoTaus();
        return process(block, res, [](const l1t::Tau& t) { return t; },true,true,true);
     }
 
     bool
-    IsoEGammaUnpackerRight::unpack(const Block& block, UnpackerCollections *coll)
+    IsoEGammaUnpackerRight::unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup)
     {
        auto res = static_cast<CaloCollections*>(coll)->getEGammas();
        return process(block, res, [](l1t::EGamma eg) { eg.setHwIso(1); return eg; },false,true,false);
     }
 
     bool
-    NonIsoEGammaUnpackerRight::unpack(const Block& block, UnpackerCollections *coll)
+    NonIsoEGammaUnpackerRight::unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup)
     {
        auto res = static_cast<CaloCollections*>(coll)->getEGammas();
        return process(block, res, [](const l1t::EGamma& eg) { return eg; },false,false,false);
     }
 
     bool
-    CentralJetUnpackerRight::unpack(const Block& block, UnpackerCollections *coll)
+    CentralJetUnpackerRight::unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup)
     {
        auto res = static_cast<CaloCollections*>(coll)->getJets();
        return process(block, res, [](const l1t::Jet& j) { return j; },false,true,false);
     }
 
     bool
-    ForwardJetUnpackerRight::unpack(const Block& block, UnpackerCollections *coll)
+    ForwardJetUnpackerRight::unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup)
     {
        auto res = static_cast<CaloCollections*>(coll)->getJets();
        return process(block, res, [](l1t::Jet j) { j.setHwQual(j.hwQual() | 2); return j; },false,false,false);
     }
 
     bool
-    TauUnpackerRight::unpack(const Block& block, UnpackerCollections *coll)
+    TauUnpackerRight::unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup)
     {
        auto res = static_cast<CaloCollections*>(coll)->getTaus();
        return process(block, res, [](const l1t::Tau& t) { return t; },false,true,true);
     }
 
     bool
-    IsoTauUnpackerRight::unpack(const Block& block, UnpackerCollections *coll)
+    IsoTauUnpackerRight::unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup)
     {
        auto res = static_cast<CaloCollections*>(coll)->getIsoTaus();
        return process(block, res, [](const l1t::Tau& t) { return t; },false,true,true);

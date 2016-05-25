@@ -10,7 +10,7 @@ namespace l1t {
    namespace stage2 {
       class CaloTowerUnpacker : public Unpacker {
          public:
-            virtual bool unpack(const Block& block, UnpackerCollections *coll) override;
+            virtual bool unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup) override;
       };
    }
 }
@@ -20,7 +20,7 @@ namespace l1t {
 namespace l1t {
 namespace stage2 {
    bool
-   CaloTowerUnpacker::unpack(const Block& block, UnpackerCollections *coll)
+   CaloTowerUnpacker::unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup)
    {
 
      // check this is the correct MP

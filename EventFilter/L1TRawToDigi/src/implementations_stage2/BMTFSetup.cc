@@ -18,7 +18,7 @@ namespace l1t {
 
             virtual void fillDescription(edm::ParameterSetDescription& desc) override {};
 
-            virtual PackerMap getPackers(int fed, unsigned int fw) override 
+            virtual PackerMap getPackers(int fed, unsigned int fw, const edm::EventSetup& setup) override 
             {
                PackerMap res;
 
@@ -44,7 +44,7 @@ namespace l1t {
                return std::unique_ptr<UnpackerCollections>(new BMTFCollections(e));
             };
 
-            virtual UnpackerMap getUnpackers(int fed, int board, int amc, unsigned int fw) override 
+            virtual UnpackerMap getUnpackers(int fed, int board, int amc, unsigned int fw, const edm::EventSetup& setup) override 
             {
                auto outputMuon = UnpackerFactory::get()->make("stage2::BMTFUnpackerOutput");
                auto inputMuons = UnpackerFactory::get()->make("stage2::BMTFUnpackerInputs");

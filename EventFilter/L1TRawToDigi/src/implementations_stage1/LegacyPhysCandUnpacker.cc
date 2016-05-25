@@ -60,32 +60,32 @@ namespace l1t {
       namespace legacy {
          class IsoEGammaUnpacker : public Unpacker {
             public:
-               virtual bool unpack(const Block& block, UnpackerCollections *coll) override;
+               virtual bool unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup) override;
          };
 
          class NonIsoEGammaUnpacker : public Unpacker {
             public:
-               virtual bool unpack(const Block& block, UnpackerCollections *coll) override;
+               virtual bool unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup) override;
          };
 
          class CentralJetUnpacker : public Unpacker {
             public:
-               virtual bool unpack(const Block& block, UnpackerCollections *coll) override;
+               virtual bool unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup) override;
          };
 
          class ForwardJetUnpacker : public Unpacker {
             public:
-               virtual bool unpack(const Block& block, UnpackerCollections *coll) override;
+               virtual bool unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup) override;
          };
 
          class TauUnpacker : public Unpacker {
             public:
-               virtual bool unpack(const Block& block, UnpackerCollections *coll) override;
+               virtual bool unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup) override;
          };
 
          class IsoTauUnpacker : public Unpacker {
             public:
-               virtual bool unpack(const Block& block, UnpackerCollections *coll) override;
+               virtual bool unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup) override;
          };
       }
    }
@@ -97,21 +97,21 @@ namespace l1t {
    namespace stage1 {
       namespace legacy {
          bool
-         IsoEGammaUnpacker::unpack(const Block& block, UnpackerCollections *coll)
+         IsoEGammaUnpacker::unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup)
          {
             auto res = static_cast<CaloCollections*>(coll)->getEGammas();
             return process(block, res, [](l1t::EGamma eg) { eg.setHwIso(1); return eg; });
          }
 
          bool
-         NonIsoEGammaUnpacker::unpack(const Block& block, UnpackerCollections *coll)
+         NonIsoEGammaUnpacker::unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup)
          {
             auto res = static_cast<CaloCollections*>(coll)->getEGammas();
             return process(block, res, [](const l1t::EGamma& eg) { return eg; });
          }
 
          bool
-         CentralJetUnpacker::unpack(const Block& block, UnpackerCollections *coll)
+         CentralJetUnpacker::unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup)
          {
             auto res = static_cast<CaloCollections*>(coll)->getJets();
 
@@ -122,7 +122,7 @@ namespace l1t {
          }
 
          bool
-         ForwardJetUnpacker::unpack(const Block& block, UnpackerCollections *coll)
+         ForwardJetUnpacker::unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup)
          {
             auto res = static_cast<CaloCollections*>(coll)->getJets();
 
@@ -133,14 +133,14 @@ namespace l1t {
          }
 
          bool
-         TauUnpacker::unpack(const Block& block, UnpackerCollections *coll)
+         TauUnpacker::unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup)
          {
             auto res = static_cast<CaloCollections*>(coll)->getTaus();
             return process(block, res, [](const l1t::Tau& t) { return t; });
          }
 
          bool
-         IsoTauUnpacker::unpack(const Block& block, UnpackerCollections *coll)
+         IsoTauUnpacker::unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup)
          {
             auto res = static_cast<CaloCollections*>(coll)->getIsoTaus();
             return process(block, res, [](const l1t::Tau& t) { return t; });

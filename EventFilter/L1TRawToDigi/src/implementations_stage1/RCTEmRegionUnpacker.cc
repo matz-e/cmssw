@@ -21,7 +21,7 @@ namespace l1t {
   namespace stage1 {
     class RCTEmRegionUnpacker : public Unpacker {
       public:
-        virtual bool unpack(const Block& block, UnpackerCollections *coll) override;
+        virtual bool unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup) override;
       private:
         unsigned int counter_ = 0;
     };
@@ -171,7 +171,7 @@ namespace l1t {
          }// end of loop over BX 
       }
 
-      bool RCTEmRegionUnpacker::unpack(const Block& block, UnpackerCollections *coll){
+      bool RCTEmRegionUnpacker::unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup){
          if (block.header().getCapID() == 0) {
             unpack_region(block, coll);
          } else if (block.header().getCapID() == 1) {

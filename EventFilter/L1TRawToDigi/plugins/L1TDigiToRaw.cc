@@ -113,7 +113,7 @@ namespace l1t {
       auto orbit = event.eventAuxiliary().orbitNumber();
 
       // Create all the AMC payloads to pack into the AMC13
-      for (const auto& item: setup_->getPackers(fedId_, fwId_)) {
+      for (const auto& item: setup_->getPackers(fedId_, fwId_, setup)) {
          auto amc_no = item.first.first;
          auto board = item.first.second;
          auto packers = item.second;
@@ -121,7 +121,7 @@ namespace l1t {
          Blocks block_load;
          for (const auto& packer: packers) {
             LogDebug("L1T") << "Adding packed blocks";
-            auto blocks = packer->pack(event, tokens_.get(), amc_no, board);
+            auto blocks = packer->pack(event, setup, tokens_.get(), amc_no, board);
             block_load.insert(block_load.end(), blocks.begin(), blocks.end());
          }
 

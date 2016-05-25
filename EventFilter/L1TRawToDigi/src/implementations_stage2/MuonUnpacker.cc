@@ -11,7 +11,7 @@ namespace l1t {
    namespace stage2 {
       class MuonUnpacker : public Unpacker {
          public:
-            virtual bool unpack(const Block& block, UnpackerCollections *coll) override;
+            virtual bool unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup) override;
       };
    }
 }
@@ -20,7 +20,7 @@ namespace l1t {
 namespace l1t {
    namespace stage2 {
       bool
-      MuonUnpacker::unpack(const Block& block, UnpackerCollections *coll)
+      MuonUnpacker::unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup)
       {
          LogDebug("L1T") << "Block ID  = " << block.header().getID() << " size = " << block.header().getSize();
 

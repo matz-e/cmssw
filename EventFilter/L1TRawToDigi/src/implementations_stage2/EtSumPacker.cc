@@ -11,7 +11,7 @@ namespace l1t {
       class EtSumPacker : public Packer {
          public:
 	    EtSumPacker(int b1) : b1_(b1) {}
-            virtual Blocks pack(const edm::Event&, const PackerTokens*, int amc_no, int board) override;
+            virtual Blocks pack(const edm::Event&, const edm::EventSetup&, const PackerTokens*, int amc_no, int board) override;
             int b1_;
       };
       class GTEtSumPacker : public EtSumPacker {
@@ -31,7 +31,7 @@ namespace l1t {
 namespace l1t {
 namespace stage2 {
    Blocks
-   EtSumPacker::pack(const edm::Event& event, const PackerTokens* toks, int amc_no, int board)
+   EtSumPacker::pack(const edm::Event& event, const edm::EventSetup& setup, const PackerTokens* toks, int amc_no, int board)
    {
       edm::Handle<EtSumBxCollection> etSums;
       event.getByToken(static_cast<const CommonTokens*>(toks)->getEtSumToken(), etSums);

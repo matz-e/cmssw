@@ -12,7 +12,7 @@ namespace l1t {
    namespace stage2 {
       class TauUnpacker : public Unpacker {
          public:
-            virtual bool unpack(const Block& block, UnpackerCollections *coll) override;
+            virtual bool unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup) override;
       };
    }
 }
@@ -22,7 +22,7 @@ namespace l1t {
 namespace l1t {
 namespace stage2 {
    bool
-   TauUnpacker::unpack(const Block& block, UnpackerCollections *coll)
+   TauUnpacker::unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup)
    {
 
      using namespace l1t::stage2::layer2;

@@ -31,7 +31,7 @@ namespace l1t
 				tagSegID = 1;
 		}
 			
-		bool BMTFUnpackerInputs::unpack(const Block& block, UnpackerCollections *coll)
+		bool BMTFUnpackerInputs::unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup)
 		{
 			unsigned int ownLinks[] = {4,5,12,13,20,21,22,23,28,29};
 			bool ownFlag(false);

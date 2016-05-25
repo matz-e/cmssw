@@ -5,6 +5,10 @@
 
 #include "EventFilter/L1TRawToDigi/interface/Block.h"
 
+namespace edm {
+   class EventSetup;
+}
+
 namespace l1t {
    class UnpackerCollections;
 
@@ -12,7 +16,7 @@ namespace l1t {
 
    class Unpacker {
       public:
-         virtual bool unpack(const Block& block, UnpackerCollections *coll) = 0;
+         virtual bool unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup) = 0;
    };
 
    typedef Unpacker*(unpack_fct)();

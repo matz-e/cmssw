@@ -23,7 +23,7 @@ namespace l1t {
                desc.addOptional<edm::InputTag>("EMTFInputLabel")->setComment("for stage2");
             };
 
-            virtual PackerMap getPackers(int fed, unsigned int fw) override {
+            virtual PackerMap getPackers(int fed, unsigned int fw, const edm::EventSetup& setup) override {
                PackerMap res;
 
                if (fed == 1402) {
@@ -48,7 +48,7 @@ namespace l1t {
                return std::unique_ptr<UnpackerCollections>(new GMTCollections(e));
             };
 
-            virtual UnpackerMap getUnpackers(int fed, int board, int amc, unsigned int fw) override {
+            virtual UnpackerMap getUnpackers(int fed, int board, int amc, unsigned int fw, const edm::EventSetup& setup) override {
                UnpackerMap res;
 
                auto gmt_in_unp = UnpackerFactory::get()->make("stage2::RegionalMuonGMTUnpacker");

@@ -6,7 +6,7 @@ namespace l1t
 {
 	namespace stage2
 	{
-		bool BMTFUnpackerOutput::unpack(const Block& block, UnpackerCollections *coll)
+		bool BMTFUnpackerOutput::unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup)
 		{
 			unsigned int blockId = block.header().getID();
 			LogDebug("L1T") << "Block ID: " << blockId << " size: " << block.header().getSize();

@@ -8,7 +8,7 @@ namespace l1t{
 		class BMTFUnpackerOutput : public Unpacker
 		{
 			public:
-				virtual bool unpack(const Block& block, UnpackerCollections *coll) override;
+				virtual bool unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup) override;
 		};
 	}
 }

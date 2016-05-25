@@ -42,32 +42,32 @@ namespace l1t {
   namespace stage1 {
     class IsoEGammaPacker : public Packer {
       public:
-        virtual Blocks pack(const edm::Event&, const PackerTokens*, int amc_no, int board) override;
+        virtual Blocks pack(const edm::Event&, const edm::EventSetup&, const PackerTokens*, int amc_no, int board) override;
     };
 
     class NonIsoEGammaPacker : public Packer {
       public:
-        virtual Blocks pack(const edm::Event&, const PackerTokens*, int amc_no, int board) override;
+        virtual Blocks pack(const edm::Event&, const edm::EventSetup&, const PackerTokens*, int amc_no, int board) override;
     };
 
     class CentralJetPacker : public Packer {
       public:
-        virtual Blocks pack(const edm::Event&, const PackerTokens*, int amc_no, int board) override;
+        virtual Blocks pack(const edm::Event&, const edm::EventSetup&, const PackerTokens*, int amc_no, int board) override;
     };
 
     class ForwardJetPacker : public Packer {
       public:
-        virtual Blocks pack(const edm::Event&, const PackerTokens*, int amc_no, int board) override;
+        virtual Blocks pack(const edm::Event&, const edm::EventSetup&, const PackerTokens*, int amc_no, int board) override;
     };
 
     class TauPacker : public Packer {
       public:
-        virtual Blocks pack(const edm::Event&, const PackerTokens*, int amc_no, int board) override;
+        virtual Blocks pack(const edm::Event&, const edm::EventSetup&, const PackerTokens*, int amc_no, int board) override;
     };
 
     class IsoTauPacker : public Packer {
       public:
-        virtual Blocks pack(const edm::Event&, const PackerTokens*, int amc_no, int board) override;
+        virtual Blocks pack(const edm::Event&, const edm::EventSetup&, const PackerTokens*, int amc_no, int board) override;
     };
   }
 }
@@ -77,7 +77,7 @@ namespace l1t {
 namespace l1t {
   namespace stage1 {
     Blocks
-    IsoEGammaPacker::pack(const edm::Event& event, const PackerTokens* toks, int amc_no, int board)
+    IsoEGammaPacker::pack(const edm::Event& event, const edm::EventSetup& setup, const PackerTokens* toks, int amc_no, int board)
     {
        edm::Handle<EGammaBxCollection> egammas;
        event.getByToken(static_cast<const CaloTokens*>(toks)->getEGammaToken(), egammas);
@@ -86,7 +86,7 @@ namespace l1t {
     }
 
     Blocks
-    NonIsoEGammaPacker::pack(const edm::Event& event, const PackerTokens* toks, int amc_no, int board)
+    NonIsoEGammaPacker::pack(const edm::Event& event, const edm::EventSetup& setup, const PackerTokens* toks, int amc_no, int board)
     {
        edm::Handle<EGammaBxCollection> egammas;
        event.getByToken(static_cast<const CaloTokens*>(toks)->getEGammaToken(), egammas);
@@ -95,7 +95,7 @@ namespace l1t {
     }
 
     Blocks
-    CentralJetPacker::pack(const edm::Event& event, const PackerTokens* toks, int amc_no, int board)
+    CentralJetPacker::pack(const edm::Event& event, const edm::EventSetup& setup, const PackerTokens* toks, int amc_no, int board)
     {
        edm::Handle<JetBxCollection> jets;
        event.getByToken(static_cast<const CaloTokens*>(toks)->getJetToken(), jets);
@@ -104,7 +104,7 @@ namespace l1t {
     }
 
     Blocks
-    ForwardJetPacker::pack(const edm::Event& event, const PackerTokens* toks, int amc_no, int board)
+    ForwardJetPacker::pack(const edm::Event& event, const edm::EventSetup& setup, const PackerTokens* toks, int amc_no, int board)
     {
        edm::Handle<JetBxCollection> jets;
        event.getByToken(static_cast<const CaloTokens*>(toks)->getJetToken(), jets);
@@ -113,7 +113,7 @@ namespace l1t {
     }
 
     Blocks
-    TauPacker::pack(const edm::Event& event, const PackerTokens* toks, int amc_no, int board)
+    TauPacker::pack(const edm::Event& event, const edm::EventSetup& setup, const PackerTokens* toks, int amc_no, int board)
     {
        edm::Handle<TauBxCollection> taus;
        event.getByToken(static_cast<const CaloTokens*>(toks)->getTauToken(), taus);
@@ -122,7 +122,7 @@ namespace l1t {
     }
 
     Blocks
-    IsoTauPacker::pack(const edm::Event& event, const PackerTokens* toks, int amc_no, int board)
+    IsoTauPacker::pack(const edm::Event& event, const edm::EventSetup& setup, const PackerTokens* toks, int amc_no, int board)
     {
        edm::Handle<TauBxCollection> taus;
        event.getByToken(static_cast<const CaloTokens*>(toks)->getIsoTauToken(), taus);

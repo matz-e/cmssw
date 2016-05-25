@@ -9,7 +9,7 @@ namespace l1t {
       namespace legacy {
          class HFRingUnpacker : public Unpacker {
             public:
-               virtual bool unpack(const Block& block, UnpackerCollections *coll) override;
+               virtual bool unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup) override;
          };
       }
    }
@@ -21,7 +21,7 @@ namespace l1t {
    namespace stage1 {
       namespace legacy {
          bool
-         HFRingUnpacker::unpack(const Block& block, UnpackerCollections *coll)
+         HFRingUnpacker::unpack(const Block& block, UnpackerCollections *coll, const edm::EventSetup& setup)
          {
 
             LogDebug("L1T") << "Block ID  = " << block.header().getID() << " size = " << block.header().getSize();

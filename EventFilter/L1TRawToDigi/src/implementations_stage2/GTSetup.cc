@@ -23,7 +23,7 @@ namespace l1t {
                desc.addOptional<edm::InputTag>("CaloInputLabel")->setComment("for stage2");
 	    };
 
-            virtual PackerMap getPackers(int fed, unsigned int fw) override {
+            virtual PackerMap getPackers(int fed, unsigned int fw, const edm::EventSetup& setup) override {
                PackerMap res;
 
                if (fed == 1404) { 
@@ -59,7 +59,7 @@ namespace l1t {
                return std::unique_ptr<UnpackerCollections>(new GTCollections(e));
             };
 
-            virtual UnpackerMap getUnpackers(int fed, int board, int amc, unsigned int fw) override {
+            virtual UnpackerMap getUnpackers(int fed, int board, int amc, unsigned int fw, const edm::EventSetup& setup) override {
 
 	       auto muon_unp = UnpackerFactory::get()->make("stage2::MuonUnpacker");
 	       auto egamma_unp = UnpackerFactory::get()->make("stage2::EGammaUnpacker");

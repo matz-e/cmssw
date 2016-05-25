@@ -9,7 +9,7 @@ namespace l1t {
    namespace stage2 {
       class RegionalMuonGMTPacker : public Packer {
          public:
-            virtual Blocks pack(const edm::Event&, const PackerTokens*, int amc_no, int board) override;
+            virtual Blocks pack(const edm::Event&, const edm::EventSetup&, const PackerTokens*, int amc_no, int board) override;
          private:
             typedef std::map<unsigned int, std::vector<uint32_t>> PayloadMap;
             void packTF(const edm::Event&, const edm::EDGetTokenT<RegionalMuonCandBxCollection>&, Blocks&, const std::vector<unsigned int>&);
@@ -21,7 +21,7 @@ namespace l1t {
 namespace l1t {
    namespace stage2 {
       Blocks
-      RegionalMuonGMTPacker::pack(const edm::Event& event, const PackerTokens* toks, int amc_no, int board)
+      RegionalMuonGMTPacker::pack(const edm::Event& event, const edm::EventSetup& setup, const PackerTokens* toks, int amc_no, int board)
       {	 
 
 	 //auto bmtfToken = static_cast<const GMTTokens*>(toks)->getRegionalMuonCandTokenBMTF();

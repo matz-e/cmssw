@@ -26,7 +26,7 @@ namespace l1t {
                desc.addOptional<edm::InputTag>("EmCandInputLabel")->setComment("for stage1");
             };
 
-            virtual PackerMap getPackers(int fed, unsigned int fw) override {
+            virtual PackerMap getPackers(int fed, unsigned int fw, const edm::EventSetup& setup) override {
                PackerMap res;
 
                res[{1, 0x2300}] = {
@@ -63,7 +63,7 @@ namespace l1t {
                return std::unique_ptr<UnpackerCollections>(new CaloCollections(e));
             };
 
-            virtual UnpackerMap getUnpackers(int fed, int board, int amc, unsigned int fw) override {
+            virtual UnpackerMap getUnpackers(int fed, int board, int amc, unsigned int fw, const edm::EventSetup& setup) override {
                UnpackerMap res;
 
                // FIXME Hard-coded firmware version for first 74x MC campaigns.
