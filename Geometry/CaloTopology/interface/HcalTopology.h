@@ -205,6 +205,7 @@ private:
 	 kHOhalf = 1080 ,
 	 kHFhalf = 864  ,
 	 kHThalf = 2088,
+	 kHThalf2017 = 2520,
 	 kZDChalf = 11,
 	 kCASTORhalf = 224,
 	 kCALIBhalf = 693,
@@ -216,6 +217,7 @@ private:
   enum { kHFSizePreLS1 = 2*kHFhalf } ;
   enum { kHTSizePreLS1 = 2*kHThalf } ;
   enum { kHTSizePhase1 = (kHTSizePreLS1+(2*12*36)) } ;
+  enum { kHTSize2017 = 2*kHThalf2017 } ;
   enum { kCALIBSizePreLS1 = 2*kCALIBhalf };
 };
 

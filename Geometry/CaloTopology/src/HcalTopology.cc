@@ -63,7 +63,9 @@ HcalTopology::HcalTopology(const HcalDDDRecConstants* hcons) :
     numberOfShapes_ = 500;
   }
   maxEta_ = (lastHERing_ > lastHFRing_) ? lastHERing_ : lastHFRing_;
-  if (triggerMode_ == HcalTopologyMode::tm_LHC_RCT) {
+  if (mode_ == HcalTopologyMode::SLHC) {
+     HTSize_ = kHTSize2017;
+  } else if (triggerMode_ == HcalTopologyMode::tm_LHC_RCT) {
     HTSize_ = kHTSizePreLS1;
   } else {
     HTSize_ = kHTSizePhase1;
@@ -1022,15 +1024,21 @@ unsigned int HcalTopology::detId2denseIdHT(const DetId& id) const {
   unsigned int ivers = tid.version();
 
   unsigned int index;
-  if (ivers  == 0) {
-    if ((iphi-1)%4==0) index = (iphi-1)*32 + (ietaAbs-1) - (12*((iphi-1)/4));
-    else               index = (iphi-1)*28 + (ietaAbs-1) + (4*(((iphi-1)/4)+1));
-    if (zside == -1) index += kHThalf;
-  } else {
-    index = kHTSizePreLS1;
-    if (zside == -1) index += ((kHTSizePhase1-kHTSizePreLS1)/2);
-    index += (36 * (ietaAbs - 30) + ((iphi - 1)/2));
-  }
+  if (topoVersion_ == 0) {
+     if (ivers  == 0) {
+       if ((iphi-1)%4==0) index = (iphi-1)*32 + (ietaAbs-1) - (12*((iphi-1)/4));
+       else               index = (iphi-1)*28 + (ietaAbs-1) + (4*(((iphi-1)/4)+1));
+       if (zside == -1) index += kHThalf;
+     } else {
+       index = kHTSizePreLS1;
+       if (zside == -1) index += ((kHTSizePhase1-kHTSizePreLS1)/2);
+       index += (36 * (ietaAbs - 30) + ((iphi - 1)/2));
+     }
+   } else {
+      if ((iphi-1)%2==0) index = (iphi-1)*41 + (ietaAbs-1) - (12*((iphi-1)/2));
+      else               index = (iphi-1)*29 + (ietaAbs-1) + (12*(((iphi-1)/2)+1));
+      if (zside == -1) index += kHThalf2017;
+   }
 
   return index;
 }
