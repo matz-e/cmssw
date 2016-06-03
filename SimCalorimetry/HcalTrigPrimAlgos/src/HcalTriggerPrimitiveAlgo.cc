@@ -27,7 +27,7 @@ HcalTriggerPrimitiveAlgo::HcalTriggerPrimitiveAlgo( bool pf, const std::vector<d
                                                    numberOfPresamplesHF_(numberOfPresamplesHF),
                                                    minSignalThreshold_(minSignalThreshold),
                                                    PMT_NoiseThreshold_(PMT_NoiseThreshold),
-						   NCTScaleShift(0), RCTScaleShift(0),
+                                                   NCTScaleShift(0), RCTScaleShift(0),
                                                    peak_finder_algorithm_(2)
 {
    //No peak finding setting (for Fastsim)
@@ -51,7 +51,7 @@ void HcalTriggerPrimitiveAlgo::run(const HcalTPGCoder* incoder,
                                    const HBHEDigiCollection& hbheDigis,
                                    const HFDigiCollection& hfDigis,
                                    HcalTrigPrimDigiCollection& result,
-				   const HcalTrigTowerGeometry* trigTowerGeometry,
+                                   const HcalTrigTowerGeometry* trigTowerGeometry,
                                    float rctlsb, const HcalFeatureBit* LongvrsShortCut) {
    theTrigTowerGeometry = trigTowerGeometry;
     
