@@ -87,6 +87,8 @@ def customise_Hcal2017(process):
         process.hcalnoise.digiCollName = cms.string('simHcalDigis')
     if hasattr(process,'datamixing_step'):
         process=customise_mixing(process)
+    if hasattr(process,'simHcalTriggerPrimitiveDigis'):
+        process.simHcalTriggerPrimitiveDigis.upgradeHF = cms.bool(True)
     
     return process
     
@@ -96,6 +98,9 @@ def customise_Hcal2017Full(process):
     
     #use HE phase1 conditions - test SiPM/QIE11
     process.es_hardcode.useHEUpgrade = cms.bool(True)
+
+    if hasattr(process,'simHcalTriggerPrimitiveDigis'):
+        process.simHcalTriggerPrimitiveDigis.upgradeHE = cms.bool(True)
     
     return process
     
