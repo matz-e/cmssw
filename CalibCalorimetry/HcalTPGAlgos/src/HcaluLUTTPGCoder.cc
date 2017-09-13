@@ -8,6 +8,7 @@
 #include "CalibFormats/HcalObjects/interface/HcalDbService.h"
 #include "DataFormats/HcalDigi/interface/QIE10DataFrame.h"
 #include "DataFormats/HcalDigi/interface/QIE11DataFrame.h"
+#include "DataFormats/HcalDetId/interface/HcalTrigTowerDetId.h"
 #include "Geometry/HcalTowerAlgo/interface/HcalTrigTowerGeometry.h"
 #include "Geometry/Records/interface/IdealGeometryRecord.h"
 #include "Geometry/CaloGeometry/interface/CaloGeometry.h"
@@ -33,7 +34,7 @@ const int HcaluLUTTPGCoder::QIE10_LUT_BITMASK;
 const int HcaluLUTTPGCoder::QIE11_LUT_BITMASK;
 
 
-HcaluLUTTPGCoder::HcaluLUTTPGCoder(const HcalTopology* top) : topo_(top), LUTGenerationMode_(true), bitToMask_(0) {
+HcaluLUTTPGCoder::HcaluLUTTPGCoder(const HcalTopology* top) : topo_(top), LUTGenerationMode_(true), bitToMask_(0), allLinear_(false) {
   firstHBEta_ = topo_->firstHBRing();      
   lastHBEta_  = topo_->lastHBRing();
   nHBEta_     = (lastHBEta_-firstHBEta_+1);
@@ -228,7 +229,13 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
     assert(metadata !=nullptr);
     float nominalgain_ = metadata->getNominalGain();
 
+    HcalTrigTowerGeometry triggeo(topo_);
     std::map<int, float> cosh_ieta;
+    for (int i = 1; i <= firstHFEta_; ++i) {
+       double eta_low = 0., eta_high = 0.;
+       triggeo.towerEtaBounds(i, 0, eta_low, eta_high); 
+       cosh_ieta[i] = fabs(cosh((eta_low + eta_high)/2.));
+    }
     for (int i = firstHFEta_; i <= lastHFEta_; ++i){
 	std::pair<double,double> etas = topo_->etaRange(HcalForward,i);
 	double eta1 = etas.first;
@@ -314,7 +321,11 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
 	    for (unsigned int adc = 0; adc < SIZE; ++adc) {
 		if (isMasked) lut[adc] = 0;
 		else {
-		    lut[adc] = (LutElement) std::min(std::max(0, int((adc2fC(adc) - ped) * gain * rcalib / nominalgain_ / granularity)), MASK);
+                    if (allLinear_)
+                       lut[adc] = (LutElement) std::min(std::max(0, int((adc2fC(adc) - ped) * gain * rcalib / (8 * lsb_) / cosh_ieta[cell.ietaAbs()])), MASK);
+                    else
+                       lut[adc] = (LutElement) std::min(std::max(0, int((adc2fC(adc) - ped) * gain * rcalib / nominalgain_ / granularity)), MASK);
+
 		    if(QIEtype==2){
 			if (adc >= mipMin and adc < mipMax) lut[adc] |= QIE11_LUT_MSB0;
 			else if (adc >= mipMax) lut[adc] |= QIE11_LUT_MSB1;
