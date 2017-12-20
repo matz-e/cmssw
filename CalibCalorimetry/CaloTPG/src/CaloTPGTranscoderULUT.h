@@ -18,8 +18,12 @@ class HcalTrigTowerGeometry;
 
 class CaloTPGTranscoderULUT : public CaloTPGTranscoder {
 public:
-  CaloTPGTranscoderULUT(const std::string& compressionFile="",
-                        const std::string& decompressionFile="");
+  CaloTPGTranscoderULUT(const std::string& compressionFile,
+                        const std::string& decompressionFile,
+                        const HcalLutMetadata&,
+                        const HcalTrigTowerGeometry&,
+                        int nctScaleShift, int rctScaleShift,
+                        double lsbQIE8, double lsbQIE11, bool linear);
   ~CaloTPGTranscoderULUT() override;
   HcalTriggerPrimitiveSample hcalCompress(const HcalTrigTowerDetId& id, unsigned int sample, int fineGrain) const override;
   EcalTriggerPrimitiveSample ecalCompress(const EcalTrigTowerDetId& id, unsigned int sample, bool fineGrain) const override;
@@ -34,9 +38,6 @@ public:
   double hcaletValue(const HcalTrigTowerDetId& hid, const HcalTriggerPrimitiveSample& hc) const override;
   virtual bool HTvalid(const int ieta, const int iphi, const int version) const;
   virtual const std::vector<unsigned int> getCompressionLUT(const HcalTrigTowerDetId& id) const;
-  virtual void setup(HcalLutMetadata const&, HcalTrigTowerGeometry const&,
-                     int nctScaleShift, int rctScaleShift,
-                     double lsbQIE8, double lsbQIE11, bool allLinear);
   virtual int getOutputLUTId(const HcalTrigTowerDetId& id) const;
   virtual int getOutputLUTId(const int ieta, const int iphi, const int version) const;
 
@@ -68,13 +69,13 @@ public:
   void loadHCALCompress(HcalLutMetadata const&, HcalTrigTowerGeometry const&) ; //Analytical compression tables
 
   // Member Variables
-  bool allLinear_ = false;
-  double nominal_gain_;
-  double lsb_factor_;
-  double rct_factor_;
-  double nct_factor_;
-  double lin8_factor_;
-  double lin11_factor_;
+  const bool allLinear_;
+  const double nominal_gain_;
+  const double lsb_factor_;
+  const double rct_factor_;
+  const double nct_factor_;
+  const double lin8_factor_;
+  const double lin11_factor_;
   const std::string compressionFile_;
   const std::string decompressionFile_;
   std::vector<int> ietal;

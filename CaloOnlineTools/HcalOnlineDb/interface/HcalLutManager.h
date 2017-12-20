@@ -75,11 +75,6 @@ class HcalLutManager{
 										    int _crate,
 										    bool split_by_crate = true );
 
-  std::map<int, boost::shared_ptr<LutXml> > getCompressionLutXmlFromAsciiMaster( std::string _filename,
-									  std::string _tag,
-									  int _crate = -1,
-									  bool split_by_crate = true );
-
   std::map<int, boost::shared_ptr<LutXml> > getLinearizationLutXmlFromCoder( const HcalTPGCoder & _coder,
 								      std::string _tag,
 								      bool split_by_crate = true );
@@ -89,8 +84,6 @@ class HcalLutManager{
   std::map<int, boost::shared_ptr<LutXml> > getLinearizationLutXmlFromCoderEmap( const HcalTPGCoder & _coder,
 									  std::string _tag,
 									  bool split_by_crate = true );
-
-  std::map<int, boost::shared_ptr<LutXml> > getCompressionLutXmlFromCoder( std::string _tag, bool split_by_crate = true );
 
   std::map<int, boost::shared_ptr<LutXml> > getCompressionLutXmlFromCoder( const CaloTPGTranscoderULUT & _coder,
 								    std::string _tag,
@@ -111,15 +104,9 @@ class HcalLutManager{
   int writeLutXmlFiles( std::map<int, boost::shared_ptr<LutXml> > & _xml, std::string _tag = "default_tag", bool split_by_crate = true );
 
   int createLinLutXmlFiles( std::string _tag, std::string _lin_file, bool split_by_crate = true );
-  int createCompLutXmlFilesFromCoder( std::string _tag, bool split_by_crate = true );
-  int createAllLutXmlFiles( std::string _tag, std::string _lin_file, std::string _comp_file, bool split_by_crate = true );
-  int createAllLutXmlFilesFromCoder( const HcalTPGCoder & _coder, std::string _tag, bool split_by_crate = true );
-  int createLutXmlFiles_HBEFFromCoder_HOFromAscii( std::string _tag, const HcalTPGCoder & _coder, std::string _lin_file, bool split_by_crate = true );
   int createLutXmlFiles_HBEFFromCoder_HOFromAscii( std::string _tag, const HcalTPGCoder & _coder, const CaloTPGTranscoderULUT & _transcoder, std::string _lin_file, bool split_by_crate = true );
 
   int createLutXmlFiles_HBEFFromCoder_HOFromAscii_ZDC( std::string _tag, const HcalTPGCoder & _coder, const CaloTPGTranscoderULUT & _transcoder, std::string _lin_file, bool split_by_crate = true );
-
-  int createAllLutXmlFilesLinAsciiCompCoder( std::string _tag, std::string _lin_file, bool split_by_crate = true );
 
   // tests
   //    reading LUTs from a local XML

@@ -17,13 +17,43 @@
 using namespace std;
 
 CaloTPGTranscoderULUT::CaloTPGTranscoderULUT(const std::string& compressionFile,
-                                             const std::string& decompressionFile)
-                                                : theTopology(nullptr),
-                                                  nominal_gain_(0.), lsb_factor_(0.), rct_factor_(1.), nct_factor_(1.),
-                                                  lin8_factor_(1.), lin11_factor_(1.),
+                                             const std::string& decompressionFile,
+                                             const HcalLutMetadata& meta,
+                                             const HcalTrigTowerGeometry& geo,
+                                             int nctScaleShift, int rctScaleShift,
+                                             double lsbQIE8, double lsbQIE11, bool linear
+                                             )
+                                                : theTopology(meta.topo()),
+                                                  allLinear_(linear),
+                                                  nominal_gain_(meta.getNominalGain()),
+                                                  lsb_factor_(meta.getRctLsb()),
+                                                  rct_factor_(lsb_factor_ / (HcaluLUTTPGCoder::lsb_ * (1 << rctScaleShift))),
+                                                  nct_factor_(lsb_factor_ / (HcaluLUTTPGCoder::lsb_ * (1 << nctScaleShift))),
+                                                  lin8_factor_(lsb_factor_ / lsbQIE8),
+                                                  lin11_factor_(lsb_factor_ / lsbQIE11),
                                                   compressionFile_(compressionFile),
                                                   decompressionFile_(decompressionFile)
 {
+    outputLUT_.resize(theTopology->getHTSize());
+    hcaluncomp_.resize(theTopology->getHTSize());
+
+    plan1_towers_.clear();
+    for (const auto& id: meta.getAllChannels()) {
+       if (not (id.det() == DetId::Hcal and theTopology->valid(id)))
+          continue;
+       HcalDetId cell(id);
+       if (not theTopology->dddConstants()->isPlan1(cell))
+          continue;
+       for (const auto& tower: geo.towerIds(cell))
+          plan1_towers_.emplace(tower);
+    }
+
+    if (compressionFile_.empty() && decompressionFile_.empty()) {
+       loadHCALCompress(meta, geo);
+    }
+    else {
+       throw cms::Exception("Not Implemented") << "setup of CaloTPGTranscoderULUT from text files";
+    }
 }
 
 CaloTPGTranscoderULUT::~CaloTPGTranscoderULUT() {
@@ -31,10 +61,6 @@ CaloTPGTranscoderULUT::~CaloTPGTranscoderULUT() {
 
 void CaloTPGTranscoderULUT::loadHCALCompress(HcalLutMetadata const& lutMetadata,
                                              HcalTrigTowerGeometry const& theTrigTowerGeometry) {
-    if (!theTopology) {
-        throw cms::Exception("CaloTPGTranscoderULUT") << "Topology not set! Use CaloTPGTranscoderULUT::setup(...) first!";
-    }
-
     std::array<unsigned int, OUTPUT_LUT_SIZE> analyticalLUT;
     std::array<unsigned int, OUTPUT_LUT_SIZE> linearQIE8LUT;
     std::array<unsigned int, OUTPUT_LUT_SIZE> linearQIE11LUT;
@@ -187,23 +213,14 @@ void CaloTPGTranscoderULUT::rctJetUncompress(const HcalTrigTowerDetId& hid, cons
 bool CaloTPGTranscoderULUT::HTvalid(const int ieta, const int iphiin, const int version) const {
 	HcalTrigTowerDetId id(ieta, iphiin);
 	id.setVersion(version);
-	if (!theTopology) {
-		throw cms::Exception("CaloTPGTranscoderULUT") << "Topology not set! Use CaloTPGTranscoderULUT::setup(...) first!";
-	}
 	return theTopology->validHT(id);
 }
 
 int CaloTPGTranscoderULUT::getOutputLUTId(const HcalTrigTowerDetId& id) const {
-    if (!theTopology) {
-        throw cms::Exception("CaloTPGTranscoderULUT") << "Topology not set! Use CaloTPGTranscoderULUT::setup(...) first!";
-    }
     return theTopology->detId2denseIdHT(id);
 }
 
 int CaloTPGTranscoderULUT::getOutputLUTId(const int ieta, const int iphiin, const int version) const {
-	if (!theTopology) {
-		throw cms::Exception("CaloTPGTranscoderULUT") << "Topology not set! Use CaloTPGTranscoderULUT::setup(...) first!";
-	}
 	HcalTrigTowerDetId id(ieta, iphiin);
 	id.setVersion(version);
 	return theTopology->detId2denseIdHT(id);
@@ -212,10 +229,6 @@ int CaloTPGTranscoderULUT::getOutputLUTId(const int ieta, const int iphiin, cons
 unsigned int
 CaloTPGTranscoderULUT::getOutputLUTSize(const HcalTrigTowerDetId& id) const
 {
-   if (!theTopology)
-      throw cms::Exception("CaloTPGTranscoderULUT")
-         << "Topology not set! Use CaloTPGTranscoderULUT::setup(...) first!";
-
    switch (theTopology->triggerMode()) {
       case HcalTopologyMode::TriggerMode_2009:
       case HcalTopologyMode::TriggerMode_2016:
@@ -254,10 +267,6 @@ CaloTPGTranscoderULUT::getOutputLUTSize(const HcalTrigTowerDetId& id) const
 bool
 CaloTPGTranscoderULUT::isOnlyQIE11(const HcalTrigTowerDetId& id) const
 {
-   if (!theTopology)
-      throw cms::Exception("CaloTPGTranscoderULUT")
-         << "Topology not set! Use CaloTPGTranscoderULUT::setup(...) first!";
-
    switch (theTopology->triggerMode()) {
       case HcalTopologyMode::TriggerMode_2017plan1:
          if (plan1_towers_.find(id) != plan1_towers_.end() and id.ietaAbs() != theTopology->lastHBRing())
@@ -282,39 +291,4 @@ const std::vector<unsigned int> CaloTPGTranscoderULUT::getCompressionLUT(const H
    auto lut = outputLUT_[itower];
    std::vector<unsigned int> result(lut.begin(), lut.end());
    return result;
-}
-
-void CaloTPGTranscoderULUT::setup(HcalLutMetadata const& lutMetadata, HcalTrigTowerGeometry const& theTrigTowerGeometry, int nctScaleShift, int rctScaleShift, double lsbQIE8, double lsbQIE11, bool allLinear)
-{
-    theTopology	    = lutMetadata.topo();
-    nominal_gain_   = lutMetadata.getNominalGain();
-    lsb_factor_	    = lutMetadata.getRctLsb();
-
-    allLinear_ = allLinear;
-
-    rct_factor_ = lsb_factor_/(HcaluLUTTPGCoder::lsb_*(1<<rctScaleShift));
-    nct_factor_ = lsb_factor_/(HcaluLUTTPGCoder::lsb_*(1<<nctScaleShift));
-    lin8_factor_ = lsb_factor_/lsbQIE8;
-    lin11_factor_ = lsb_factor_/lsbQIE11;
-
-    outputLUT_.resize(theTopology->getHTSize());
-    hcaluncomp_.resize(theTopology->getHTSize());
-
-    plan1_towers_.clear();
-    for (const auto& id: lutMetadata.getAllChannels()) {
-       if (not (id.det() == DetId::Hcal and theTopology->valid(id)))
-          continue;
-       HcalDetId cell(id);
-       if (not theTopology->dddConstants()->isPlan1(cell))
-          continue;
-       for (const auto& tower: theTrigTowerGeometry.towerIds(cell))
-          plan1_towers_.emplace(tower);
-    }
-
-    if (compressionFile_.empty() && decompressionFile_.empty()) {
-	loadHCALCompress(lutMetadata,theTrigTowerGeometry);
-    }
-    else {
-	throw cms::Exception("Not Implemented") << "setup of CaloTPGTranscoderULUT from text files";
-    }
 }
